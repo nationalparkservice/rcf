@@ -7,8 +7,7 @@ Authors@R:
            role = c("aut", "cre"),
            email = "jnchristensen1788@gmail.com")
 Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
@@ -18,7 +17,8 @@ Imports:
     dplyr,
     magrittr,
     readr,
+    rlang,
     sf,
     sp
-URL: https://github.com/Janelle88/rcf
-BugReports: https://github.com/Janelle88/rcf/issues
+URL: https://github.com/nationalparkservice/rcf
+BugReports: https://github.com/nationalparkservice/rcf/issues
