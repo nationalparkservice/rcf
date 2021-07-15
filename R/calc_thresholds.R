@@ -31,6 +31,8 @@ calc_thresholds <- function(SiteID, data = NULL, variables = NULL, units = "impe
   # final data frame
   # --------
 
+  rh_exists <- exists("rhmin", where = data)
+
     thresholds <- data %>%
       dplyr::rename(gcm = GCM) %>%
       dplyr::mutate(month = lubridate::month(date, label = TRUE),
@@ -43,11 +45,11 @@ calc_thresholds <- function(SiteID, data = NULL, variables = NULL, units = "impe
         .data$month %in% c("Sep", "Oct", "Nov") ~ "SON")) %>%
       # returns quarter name
       dplyr::group_by(gcm, yr) %>%
-      dplyr::mutate(heat_index = heat_index(.data$tmax, .data$rhmin),
+      dplyr::mutate(heat_index = if(rh_exists == TRUE)heat_index(.data$tmax, .data$rhmin),
       # returns a number
-      heat_index_ec = .data$heat_index > 89 & .data$heat_index < 103,
+      heat_index_ec = if(rh_exists == TRUE).data$heat_index > 89 & .data$heat_index < 103,
       # returns TRUE or FALSE
-      heat_index_dan = .data$heat_index > 102 & .data$heat_index < 124,
+      heat_index_dan = if(rh_exists == TRUE).data$heat_index > 102 & .data$heat_index < 124,
       # returns TRUE or FALSE
       temp_over_95_pctl = tmax > quantile(.data$tmax, 0.95, na.rm = TRUE),
       # returns TRUE or FALSE
