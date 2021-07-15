@@ -17,7 +17,7 @@ directories. (character)}
 \item{units}{the unit type that will be used ("imperial" or "metric")}
 }
 \value{
-two dataframes - baseline_all and future_all to be used
+one data frame - SiteID.csv - to be used
 with other functions in this package(tibble)
 }
 \description{

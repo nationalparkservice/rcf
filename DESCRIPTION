@@ -15,10 +15,13 @@ RoxygenNote: 7.1.1
 Imports: 
     cft,
     dplyr,
+    here,
+    lubridate,
     magrittr,
     readr,
     rlang,
-    sf,
-    sp
+    scales,
+    sp,
+    stats
 URL: https://github.com/nationalparkservice/rcf
 BugReports: https://github.com/nationalparkservice/rcf/issues
