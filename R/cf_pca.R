@@ -8,8 +8,11 @@ cf_pca <- function(SiteID, data = NULL, year, variables = NULL, num_cf = 4, unit
 
 
 
-  df <- data %>%
-    dplyr::select(.data$date, .data$year, .data$gcm, paste(variables))
+  pca <- thresholds %>%
+    #dplyr::select(.data$date, .data$yr, .data$gcm, paste(variables)) %>%
+    tidyr::drop_na() %>%
+    base::scale() %>%
+    stats::prcomp()
 
   # ---------
   # Create PCA

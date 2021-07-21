@@ -8,15 +8,16 @@
 #'  directories. (character)
 #' @param latitude latitude of point of interest (spatial)
 #' @param longitude longitude of point of interest (spatial)
-#' @param units the unit type that will be used ("imperial" or "metric")
+#' @param units the unit type that will be used, defaults to "imperial" ("imperial" or "metric")
 #'
 #' @return one data frame - SiteID.csv - to be used
 #' with other functions in this package(tibble)
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' rcf_data(SiteID = "SCBL", latitude = 41.83476, longitude =  -103.707)
-#'
+#'}
 #'
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
@@ -80,12 +81,13 @@ rcf_data <- function(SiteID, latitude, longitude, proj_dir, units = "imperial"){
            # to not cause any issues down the line if users choose "metric"
            tmin = .data$tasmin * (9/5) - 459.67,
            tavg = (.data$tmax + .data$tmin) / 2,
-           gcm = paste(df1$model, df1$rcp, sep = "."),
+           gcm = paste(.data$model, .data$rcp, sep = "."),
            date = as.POSIXlt(.data$date,format="%Y-%m-%d"),
-           yr = lubridate::year(date)) %>%
+           yr = lubridate::year(date),
+           units = "imperial") %>%
     dplyr::rename(rhmax = .data$rhsmax,
                   rhmin = .data$rhsmin) %>%
-    dplyr::select(.data$gcm, .data$date, .data$yr, .data$precip, .data$tmin, .data$tmax, .data$tavg, .data$rhmin, .data$rhmax)
+    dplyr::select(.data$gcm, .data$date, .data$yr, .data$precip, .data$tmin, .data$tmax, .data$tavg, .data$rhmin, .data$rhmax, .data$units)
   #rename to follow previously written code
   } # close imperial if statement
 
@@ -97,12 +99,13 @@ rcf_data <- function(SiteID, latitude, longitude, proj_dir, units = "imperial"){
              tmax = .data$tasmax - 273.1,
              tmin = .data$tasmin - 273.1,
              tavg = (.data$tmax + .data$tmin) / 2,
-             gcm = paste(df1$model, df1$rcp, sep = "."),
+             gcm = paste(.data$model, .data$rcp, sep = "."),
              date = as.POSIXlt(.data$date,format="%Y-%m-%d"),
-             yr = lubridate::year(date)) %>%
+             yr = lubridate::year(date),
+             units = "metric") %>%
       dplyr::rename(rhmax = .data$rhsmax,
                   rhmin = .data$rhsmin) %>%
-      dplyr::select(.data$gcm, .data$date, .data$yr, .data$precip, .data$tmin, .data$tmax, .data$tavg, .data$rhmin, .data$rhmax)
+      dplyr::select(.data$gcm, .data$date, .data$yr, .data$precip, .data$tmin, .data$tmax, .data$tavg, .data$rhmin, .data$rhmax, .data$units)
     #rename to follow previously written code
   } # close metric if statement
 
