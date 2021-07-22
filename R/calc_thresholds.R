@@ -6,6 +6,9 @@
 #' prior to running function. Follow vignette for example data set creation (data frame)
 #' @param units the unit type that will be used, defaults to "imperial"
 #' ("imperial" or "metric")
+#' @param directory where to save files to. Per CRAN guidelines, this
+#' defaults to a temporary directory and files created will be lost after
+#' R session ends. Specify a path to retain files.
 #'
 #' @return
 #' one csv file:
@@ -13,12 +16,15 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # Generate sample data
 #'
-#' df <- data.frame(
+#' data <- data.frame(
 #' date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
 #' yr = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="year"), 100),
-#' gcm = paste0(rep(letters[1:5], each = 20), rep(letters[1:20], each = 5), rep(letters[20:26], each = 1)),
+#' gcm = paste0(rep(letters[1:5], each = 20),
+#' rep(letters[1:20], each = 5),
+#' rep(letters[20:26], each = 1)),
 #' precip = rnorm(100),
 #' tmin = rnorm(100),
 #' tmax = rnorm(100),
@@ -28,12 +34,18 @@
 #' )
 #'
 #' calc_thresholds("SCBL", data = df)
+#' }
 #'
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
 
 
-calc_thresholds <- function(SiteID, data = NULL, units = "imperial"){
+calc_thresholds <- function(SiteID,
+                            data = NULL,
+                            units = "imperial",
+                            directory = tempdir()){
+
+  here::set_here(directory)
 
   # if(variables == "all"){
   # variables = c("season","over_hot_temp", "over_high_q", "tmax_99", "heat_consecutive", "under_cold_temp", "under_low_q", "cold_consecutive", "no_precip", "no_precip_length", "over_precip_95", "over_precip_99", "precip_over_1", "precip_over_2", "freeze_thaw", "gdd", "gdd_count", "n_gdd_count", "heat_index", "heat_index_ec", "heat_index_dan", "frost")
@@ -41,7 +53,8 @@ calc_thresholds <- function(SiteID, data = NULL, units = "imperial"){
 
 ### QUESTION: Are there other groups of variables that might be typical to select, i.e. "all_precip" or "all_heat_index"
 
-  rh_exists <-  exists("rhmin", where = data)
+  rh_exists <-  any(names(data) == "rhmin")
+  if(!file.exists(".here")) here::set_here(directory)
 
 
   # --------------------------
@@ -79,38 +92,39 @@ calc_thresholds <- function(SiteID, data = NULL, units = "imperial"){
   # --------
 
     thresholds <- data %>%
-      dplyr::mutate(month = lubridate::month(date, label = TRUE),
-                    doy = lubridate::yday(date),
-                    halfyr = ifelse(.data$doy <= 182, 1, 2)) %>%
+      dplyr::mutate(month = lubridate::month(.data$date, label = TRUE)) %>%
+      dplyr::mutate(doy = lubridate::yday(.data$date)) %>%
+      dplyr::mutate(halfyr = dplyr::case_when(.data$doy <= 182 ~ 1,
+                                              TRUE ~ 2)) %>%
       dplyr::mutate(quarter = dplyr::case_when(
-        .data$month %in% c("Dec", "Jan", "Feb") ~ "DJF",
-        .data$month %in% c("Mar", "Apr", "May") ~ "MAM",
-        .data$month %in% c("Jun", "Jul", "Aug") ~ "JJA",
-        .data$month %in% c("Sep", "Oct", "Nov") ~ "SON")) %>%
+        .data$month%in% c("Dec", "Jan", "Feb") ~ "DJF",
+        .data$month%in% c("Mar", "Apr", "May") ~ "MAM",
+        .data$month%in% c("Jun", "Jul", "Aug") ~ "JJA",
+        .data$month%in% c("Sep", "Oct", "Nov") ~ "SON")) %>%
       # returns quarter name
-      dplyr::group_by(gcm, yr) %>%
+      dplyr::group_by(.data$gcm, .data$yr) %>%
       dplyr::mutate(heat_index = if(rh_exists == TRUE) heat_index(.data$tmax, .data$rhmin),
       # returns a number
       heat_index_ec = if(rh_exists == TRUE).data$heat_index > 89 & .data$heat_index < 103,
       # returns TRUE or FALSE
       heat_index_dan = if(rh_exists == TRUE).data$heat_index > 102 & .data$heat_index < 124,
       # returns TRUE or FALSE
-      temp_over_95_pctl = tmax > quantile(.data$tmax, 0.95, na.rm = TRUE),
+      temp_over_95_pctl = .data$tmax > stats::quantile(.data$tmax, 0.95, na.rm = TRUE),
       # returns TRUE or FALSE
-      temp_over_99_pctl = tmax > quantile(.data$tmax, 0.99, na.rm = TRUE),
+      temp_over_99_pctl = .data$tmax > stats::quantile(.data$tmax, 0.99, na.rm = TRUE),
       # returns TRUE or FALSE
       temp_over_95_pctl_length = (.data$temp_over_95_pctl)*unlist(lapply(rle(.data$temp_over_95_pctl)$lengths, seq_len)),
       temp_under_freeze = .data$tmin < 32,
       # returns TRUE or FALSE
       temp_under_freeze_length = (.data$temp_under_freeze)*unlist(lapply(rle(.data$temp_under_freeze)$lengths, seq_len)),
-      temp_under_5_pctl = tmin < quantile(.data$tmin, 0.05, na.rm = TRUE),
+      temp_under_5_pctl = .data$tmin < stats::quantile(.data$tmin, 0.05, na.rm = TRUE),
       # returns temperature of the 5th quantile
       no_precip = .data$precip < 0.05,
       # returns TRUE or FALSE, precip greater than 0.05 inches
       no_precip_length = (.data$no_precip)*unlist(lapply(rle(.data$no_precip)$lengths, seq_len)),
-      precip_95_pctl = precip > quantile(.data$precip[which(.data$precip > 0.05)], 0.95, na.rm = TRUE),
+      precip_95_pctl = .data$precip > stats::quantile(.data$precip[which(.data$precip > 0.05)], 0.95, na.rm = TRUE),
       # returns TRUE or FALSE
-      precip_99_pctl = precip > quantile(.data$precip[which(.data$precip > 0.05)], 0.99, na.rm = TRUE),
+      precip_99_pctl = .data$precip > stats::quantile(.data$precip[which(.data$precip > 0.05)], 0.99, na.rm = TRUE),
       # returns TRUE or FALSE
       precip_moderate = .data$precip > 1,
       # returns TRUE or FALSE
@@ -118,7 +132,7 @@ calc_thresholds <- function(SiteID, data = NULL, units = "imperial"){
       # returns TRUE or FALSE
       freeze_thaw = .data$tmin < 28 & .data$tmax > 34,
       # returns TRUE or FALSE
-      gdd = tavg > 41,
+      gdd = .data$tavg > 41,
       # returns TRUE or FALSE
       gdd_count = .data$gdd * unlist(lapply(rle(.data$gdd)$lengths, seq_len)),
       # returns consecutive gdd
@@ -170,39 +184,39 @@ calc_thresholds <- function(SiteID, data = NULL, units = "imperial"){
     # ----------------------------
 
     thresholds <- data %>%
-      dplyr::rename(gcm = GCM) %>%
-      dplyr::mutate(month = lubridate::month(date, label = TRUE),
-                    doy = lubridate::yday(date),
-                    halfyr = ifelse(.data$doy <= 182, 1, 2)) %>%
+      dplyr::rename(gcm = .data$GCM) %>%
+      dplyr::mutate(month = lubridate::month(.data$date, label = TRUE)) %>%
+      dplyr::mutate(doy = lubridate::yday(.data$date)) %>%
+      dplyr::mutate(halfyr = ifelse(.data$doy <= 182, 1, 2)) %>%
       dplyr::mutate(quarter = dplyr::case_when(
         .data$month %in% c("Dec", "Jan", "Feb") ~ "DJF",
         .data$month %in% c("Mar", "Apr", "May") ~ "MAM",
         .data$month %in% c("Jun", "Jul", "Aug") ~ "JJA",
         .data$month %in% c("Sep", "Oct", "Nov") ~ "SON")) %>%
       # returns quarter name
-      dplyr::group_by(gcm, yr) %>%
+      dplyr::group_by(.data$gcm, .data$yr) %>%
       dplyr::mutate(heat_index = if(rh_exists == TRUE) heat_index(.data$tmax, .data$rhmin),
                     # returns a number
                     heat_index_ec = if(rh_exists == TRUE).data$heat_index > 89 & .data$heat_index < 103,
                     # returns TRUE or FALSE
                     heat_index_dan = if(rh_exists == TRUE).data$heat_index > 102 & .data$heat_index < 124,
                     # returns TRUE or FALSE
-                    temp_over_95_pctl = .data$tmax > quantile(.data$tmax, 0.95, na.rm = TRUE),
+                    temp_over_95_pctl = .data$tmax > stats::quantile(.data$tmax, 0.95, na.rm = TRUE),
                     # returns TRUE or FALSE
-                    temp_over_99_pctl = .data$tmax > quantile(.data$tmax, 0.99, na.rm = TRUE),
+                    temp_over_99_pctl = .data$tmax > stats::quantile(.data$tmax, 0.99, na.rm = TRUE),
                     # returns TRUE or FALSE
                     temp_over_95_pctl_length = (.data$temp_over_95_pctl)*unlist(lapply(rle(.data$temp_over_95_pctl)$lengths, seq_len)),
                     temp_under_freeze = .data$tmin < 0,
                     # returns TRUE or FALSE
                     temp_under_freeze_length = (.data$temp_under_freeze)*unlist(lapply(rle(.data$temp_under_freeze)$lengths, seq_len)),
-                    temp_under_5_pctl = .data$tmin < quantile(.data$tmin, 0.05, na.rm = TRUE),
+                    temp_under_5_pctl = .data$tmin < stats::quantile(.data$tmin, 0.05, na.rm = TRUE),
                     # returns temperature of the 5th quantile
                     no_precip = .data$precip < 1.27, # 0.05 in = 1.27 mm
                     # returns TRUE or FALSE, precip greater than 1.27 mm
                     no_precip_length = (.data$no_precip)*unlist(lapply(rle(.data$no_precip)$lengths, seq_len)),
-                    precip_95_pctl = .data$precip > quantile(.data$precip[which(.data$precip > 0.05)], 0.95, na.rm = TRUE),
+                    precip_95_pctl = .data$precip > stats::quantile(.data$precip[which(.data$precip > 0.05)], 0.95, na.rm = TRUE),
                     # returns TRUE or FALSE
-                    precip_99_pctl = .data$precip > quantile(.data$precip[which(.data$precip > 0.05)], 0.99, na.rm = TRUE),
+                    precip_99_pctl = .data$precip > stats::quantile(.data$precip[which(.data$precip > 0.05)], 0.99, na.rm = TRUE),
                     # returns TRUE or FALSE
                     precip_moderate = .data$precip > 25, # 1 inch rain
                     # returns TRUE or FALSE
@@ -261,11 +275,8 @@ calc_thresholds <- function(SiteID, data = NULL, units = "imperial"){
     # CSV CREATION
     # --------------
 
-   readr::write_csv(thresholds, paste(SiteID, "thresholds.csv", sep = "_"))
-
-  assign("thresholds", thresholds, envir = .GlobalEnv) #assign the df to the global env
-  #users can do the next functions from it once it is assigned
+    ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
+           readr::write_csv(thresholds, here::here(directory,
+                                                   paste(SiteID, "thresholds.csv", sep = "_"))))
 
 }
-
-calc_thresholds("BAND", data = df)

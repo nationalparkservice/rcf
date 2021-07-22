@@ -8,7 +8,11 @@
 #'  directories. (character)
 #' @param latitude latitude of point of interest (spatial)
 #' @param longitude longitude of point of interest (spatial)
-#' @param units the unit type that will be used, defaults to "imperial" ("imperial" or "metric")
+#' @param units the unit type that will be used,
+#' defaults to "imperial" ("imperial" or "metric")
+#' @param directory where to save files to. Per CRAN guidelines, this
+#' defaults to a temporary directory and files created will be lost after
+#' R session ends. Specify a path to retain files.
 #'
 #' @return one data frame - SiteID.csv - to be used
 #' with other functions in this package(tibble)
@@ -22,7 +26,13 @@
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
 
-rcf_data <- function(SiteID, latitude, longitude, proj_dir, units = "imperial"){
+rcf_data <- function(SiteID,
+                     latitude,
+                     longitude,
+                     units = "imperial",
+                     directory = tempdir()){
+
+  if(!file.exists(".here")) here::set_here(directory)
 
   ## Download data
   #Variable and scenario names corresponding to MACA data directory structure
@@ -61,7 +71,7 @@ rcf_data <- function(SiteID, latitude, longitude, proj_dir, units = "imperial"){
                        area_name = SiteID,
                        years = c(Hist_StartYear, Future_EndYear),
                        models = gcms,
-                       local_dir = proj_dir,
+                       local_dir = directory,
                        parameters = vars,
                        scenarios = scens,
                        ncores = parallel::detectCores() / 2)
@@ -109,14 +119,13 @@ rcf_data <- function(SiteID, latitude, longitude, proj_dir, units = "imperial"){
     #rename to follow previously written code
   } # close metric if statement
 
-  readr::write_csv(df, here::here(SiteID,
-                                  paste0(SiteID, ".csv")))
-
-  save.image(paste(proj_dir,"/",SiteID,"_init_parsed.RData",sep=""))
+  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
+         readr::write_csv(df, here::here(SiteID,
+                                  paste0(SiteID, ".csv"))))
 
   # Remove saved climate files
   if(Remove_files == "Y") {
-    do.call(file.remove, list(list.files(paste(proj_dir,SiteID,sep="/"), full.names = TRUE)))
+    do.call(file.remove, list(list.files(paste(directory,SiteID,sep="/"), full.names = TRUE)))
     print("Files removed")
   } else {print("Files remain")}
 } #close function

@@ -12,6 +12,9 @@
 #' "corners" will do the same, but additionally return the model that represents
 #' the most extreme scenario in each quadrant
 #' @param summarize_by how to summarize the data, options are "month", "season", "year"
+#' @param directory where to save files to. Per CRAN guidelines, this
+#' defaults to a temporary directory and files created will be lost after
+#' R session ends. Specify a path to retain files.
 #'
 #' @return three .csv files:
 #' 1.
@@ -21,12 +24,15 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # Generate sample data
 #'
 #' df <- data.frame(
 #' date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
 #' yr = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="year"), 100),
-#' gcm = paste0(rep(letters[1:5], each = 20), rep(letters[1:20], each = 5), rep(letters[20:26], each = 1)),
+#' gcm = paste0(rep(letters[1:5], each = 20),
+#' rep(letters[1:20], each = 5),
+#' rep(letters[20:26], each = 1)),
 #' precip = rnorm(100),
 #' tmin = rnorm(100),
 #' tmax = rnorm(100),
@@ -36,20 +42,23 @@
 #' )
 #'
 #' cf_quadrant("SCBL", data = df, year = 2040, method = "corners", summarize_by = "year")
-#'
+#'}
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
 
-data <- readr::read_csv("BAND_thresholds.csv")
-year = 2040
+year <- 2040
+data <- thresholds
 
-method = "corners"
-SiteID = "BAND"
-summarize_by = "month"
+cf_quadrant <- function(SiteID,
+                        data = NULL,
+                        year,
+                        method = NULL,
+                        summarize_by = NULL,
+                        directory = tempdir()){
 
-cf_quadrant <- function(SiteID, data = NULL, year, method = NULL, summarize_by = NULL){
 
-  rh_exists <-  exists("rhmin", where = data)
+  rh_exists <-  any(names(data) == "rhmin")
+  if(!file.exists(".here")) here::set_here(directory)
 
   # ---------
   #subset data for future to be 30 years around focus year
@@ -140,7 +149,9 @@ if(method == "quadrant"){
 
   # this will output the scatterplot data
 
-  readr::write_csv(quadrant_df, paste0(SiteID,"_future_means_q.csv"))
+  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
+  readr::write_csv(quadrant_df, here::here(directory,
+                                           paste0(SiteID,"_future_means_q.csv"))))
 
   # future means = total mean centered on year selected, one for each model and rcp
 
@@ -201,9 +212,11 @@ if(method == "corners"){
       euc_hot_dry == min(euc_hot_dry) ~ "Hot Dry",
       TRUE ~ NA_character_
     )) %>%
-    dplyr::select(gcm, precip_change, tmax_change, tmin_change, tavg_change, cf, corner)
+    dplyr::select(.data$gcm, .data$precip_change, .data$tmax_change, .data$tmin_change, .data$tavg_change, .data$cf, .data$corner)
 
-readr::write_csv(corners_df, paste0(SiteID, "_future_means_c.csv"))
+  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
+         readr::write_csv(corners_df, here::here(directory,
+                                                 paste0(SiteID, "_future_means_c.csv"))))
 
 # future means = total mean centered on year selected, one for each model and rcp
 
@@ -222,15 +235,18 @@ readr::write_csv(corners_df, paste0(SiteID, "_future_means_c.csv"))
 
 # get the number of gcms in each quadrant
 
+if(method == "quadrant"){
+
 num_gcm <- quadrant_df %>%
   dplyr::summarise(`Warm Wet` = sum(stringr::str_count(.data$cf, "Warm Wet")),
                    `Warm Dry` = sum(stringr::str_count(.data$cf, "Warm Dry")),
                    `Hot Wet` = sum(stringr::str_count(.data$cf, "Hot Wet")),
                    `Hot Dry` = sum(stringr::str_count(.data$cf, "Hot Dry")),
                    Central = sum(stringr::str_count(.data$cf, "Central"))) %>%
-  tidyr::pivot_longer(`Warm Wet`:Central,
+  tidyr::pivot_longer(.data$`Warm Wet`:.data$Central,
                       names_to = "cf",
                       values_to = "num_of_gcms")
+}
 
 # break into if statements based on method and summarize_by
 
@@ -244,7 +260,7 @@ if(summarize_by == "month" & method == "quadrant"){
     dplyr::select(.data$gcm, .data$cf) %>%
     dplyr::full_join(future_all, by = "gcm") %>%
     dplyr::full_join(num_gcm, by = "cf") %>%
-    dplyr::group_by(month, cf)
+    dplyr::group_by(.data$month, .data$cf)
 }
 
 # --------
@@ -256,7 +272,7 @@ if(summarize_by == "season" & method == "quadrant"){
   quadrant_cf_gcm <- quadrant_df %>%
     dplyr::select(.data$gcm, .data$cf) %>%
     dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::group_by(cf, quarter)
+    dplyr::group_by(.data$cf, .data$quarter)
 
 }
 
@@ -268,7 +284,7 @@ if(summarize_by == "year" & method == "quadrant"){
   quadrant_cf_gcm <- quadrant_df %>%
     dplyr::select(.data$gcm, .data$cf) %>%
     dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::group_by(cf, yr)
+    dplyr::group_by(.data$cf, .data$yr)
 }
 
 
@@ -325,7 +341,7 @@ if(method == "quadrant"){
   # divided by (30 years * number of gcms in a quadrant) =
   # average value per month/season/yr, per cf, across all years observed
 
-  assign("method_cf_gcm", method_cf_gcm, envir = .GlobalEnv)
+  # assign("method_cf_gcm", method_cf_gcm, envir = .GlobalEnv)
   # move the df to global env for later use
 
 }
@@ -343,7 +359,7 @@ if(summarize_by == "month" & method == "corners"){
   corners_cf_gcm <- corners_df %>%
     dplyr::select(.data$gcm, .data$cf, .data$corner) %>%
     dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::group_by(corner, month)
+    dplyr::group_by(.data$corner, .data$month)
 }
 
 # --------
@@ -354,7 +370,7 @@ if(summarize_by == "season" & method == "corners"){
   corners_cf_gcm <- corners_df %>%
     dplyr::select(.data$gcm, .data$cf, .data$corner) %>%
     dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::group_by(corner, quarter)
+    dplyr::group_by(.data$corner, .data$quarter)
 }
 
 # --------
@@ -365,7 +381,7 @@ if(summarize_by == "year" & method == "corners"){
   corners_cf_gcm <- corners_df %>%
     dplyr::select(.data$gcm, .data$cf, .data$corner) %>%
     dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::group_by(corner, yr)
+    dplyr::group_by(.data$corner, .data$yr)
 }
 
 # --------
@@ -401,14 +417,11 @@ if(method == "corners"){
       frost = sum(.data$frost, na.rm = TRUE) / 30,
       grow_len = mean(.data$grow_len, na.rm = TRUE),
       .groups = "keep") %>%
-    tidyr::drop_na(corner)
+    tidyr::drop_na(.data$corner)
 
   # (sum of threshold value, per month/season/year, per cf)
   # divided by (30 years * number of gcms in a quadrant) =
   # average value per month/season/yr, per cf, across all years observed
-
-  assign("method_cf_gcm", method_cf_gcm, envir = .GlobalEnv)
-  # move the df to global env for later use
 
 }
 
@@ -418,29 +431,39 @@ if(method == "corners"){
 # -------------------------
 
 if(summarize_by == "month" & method == "quadrant"){
-  readr::write_csv(method_cf_gcm, paste0(SiteID, "_future_month_q.csv"))
+  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
+         readr::write_csv(method_cf_gcm, here::here(directory,
+                                                    paste0(SiteID, "_future_month_q.csv"))))
 }
 
 if(summarize_by == "season" & method == "quadrant"){
-  readr::write_csv(method_cf_gcm, paste0(SiteID, "_future_season_q.csv"))
+  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
+         readr::write_csv(method_cf_gcm, here::here(directory,
+                                                    paste0(SiteID, "_future_season_q.csv"))))
 }
 
 if(summarize_by == "year" & method == "quadrant"){
-  readr::write_csv(method_cf_gcm, paste0(SiteID, "_future_year_q.csv"))
+  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
+         readr::write_csv(method_cf_gcm, here::here(directory,
+                                                    paste0(SiteID, "_future_year_q.csv"))))
 }
 
 if(summarize_by == "month" & method == "corners"){
-  readr::write_csv(method_cf_gcm, paste0(SiteID, "_future_month_c.csv"))
+  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
+         readr::write_csv(method_cf_gcm, here::here(directory,
+                                                    paste0(SiteID, "_future_month_c.csv"))))
 }
 
 if(summarize_by == "season" & method == "corners"){
-  readr::write_csv(method_cf_gcm, paste0(SiteID, "_future_season_c.csv"))
+  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
+         readr::write_csv(method_cf_gcm, here::here(directory,
+                                                    paste0(SiteID, "_future_season_c.csv"))))
 }
 
 if(summarize_by == "year" & method == "corners"){
-  readr::write_csv(method_cf_gcm, paste0(SiteID, "_future_year_c.csv"))
+  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
+         readr::write_csv(method_cf_gcm, here::here(directory,
+                                                    paste0(SiteID, "_future_year_c.csv"))))
 }
 
 }# close function
-
-cf_quadrant("BAND", data = thresholds, 2040, method = "corners", summarize_by = "month")
