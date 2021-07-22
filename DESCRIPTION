@@ -23,6 +23,7 @@ Imports:
     scales,
     sp,
     stats,
+    stringr,
     tidyr
 URL: https://github.com/nationalparkservice/rcf
 BugReports: https://github.com/nationalparkservice/rcf/issues

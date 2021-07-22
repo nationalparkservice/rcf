@@ -4,7 +4,13 @@
 \alias{rcf_data}
 \title{Download data}
 \usage{
-rcf_data(SiteID, latitude, longitude, units = "imperial")
+rcf_data(
+  SiteID,
+  latitude,
+  longitude,
+  units = "imperial",
+  directory = tempdir()
+)
 }
 \arguments{
 \item{SiteID}{chosen name to use in file names, attributes, and
@@ -14,7 +20,12 @@ directories. (character)}
 
 \item{longitude}{longitude of point of interest (spatial)}
 
-\item{units}{the unit type that will be used ("imperial" or "metric")}
+\item{units}{the unit type that will be used,
+defaults to "imperial" ("imperial" or "metric")}
+
+\item{directory}{where to save files to. Per CRAN guidelines, this
+defaults to a temporary directory and files created will be lost after
+R session ends. Specify a path to retain files.}
 }
 \value{
 one data frame - SiteID.csv - to be used
@@ -25,7 +36,8 @@ Downloads data from the cft package (https://www.earthdatascience.org/cft/)
 to your parent directory.
 }
 \examples{
+\dontrun{
 rcf_data(SiteID = "SCBL", latitude = 41.83476, longitude =  -103.707)
-
+}
 
 }

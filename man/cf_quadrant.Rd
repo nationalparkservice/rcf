@@ -4,7 +4,14 @@
 \alias{cf_quadrant}
 \title{Calculate climate futures based on their quadrant}
 \usage{
-cf_quadrant(SiteID, data = NULL, year, method = NULL)
+cf_quadrant(
+  SiteID,
+  data = NULL,
+  year,
+  method = NULL,
+  summarize_by = NULL,
+  directory = tempdir()
+)
 }
 \arguments{
 \item{SiteID}{chosen name to use in file names, attributes, and
@@ -20,26 +27,33 @@ prior to running function. Follow vignette for example data set creation (data f
 in their respective quadrants "hot wet" "hot dry" "warm wet" "warm dry" and "central
 "corners" will do the same, but additionally return the model that represents
 the most extreme scenario in each quadrant}
+
+\item{summarize_by}{how to summarize the data, options are "month", "season", "year"}
+
+\item{directory}{where to save files to. Per CRAN guidelines, this
+defaults to a temporary directory and files created will be lost after
+R session ends. Specify a path to retain files.}
 }
 \value{
 three .csv files:
-\enumerate{
-\item SiteID_daily_past.csv - past data by model and day, GCM is historical
-\item SiteID_future_means_x.csv - future means of all models calculated on central year
+1.
+2. SiteID_future_means_x.csv - future means of all models calculated on central year
 3' SiteID_daily_future_x.csv - future data by model and day, future quadrants labeled
 _x: c = corner, q = quadrant
-}
 }
 \description{
 Calculate climate futures based on their quadrant
 }
 \examples{
+\dontrun{
 # Generate sample data
 
 df <- data.frame(
 date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
 yr = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="year"), 100),
-GCM = paste0(rep(letters[1:5], each = 20), rep(letters[1:20], each = 5), rep(letters[20:26], each = 1)),
+gcm = paste0(rep(letters[1:5], each = 20),
+rep(letters[1:20], each = 5),
+rep(letters[20:26], each = 1)),
 precip = rnorm(100),
 tmin = rnorm(100),
 tmax = rnorm(100),
@@ -48,6 +62,6 @@ rhmin = rnorm(100),
 tavg = rnorm(100)
 )
 
-cf_quadrant("BAND", data = df, year = 2040, method = "corners")
-
+cf_quadrant("SCBL", data = df, year = 2040, method = "corners", summarize_by = "year")
+}
 }
