@@ -32,7 +32,7 @@ rcf_data <- function(SiteID,
                      units = "imperial",
                      directory = tempdir()){
 
-  if(!file.exists(".here")) here::set_here(directory)
+  suppressMessages(if(!file.exists(".here")) here::set_here(directory))
 
   ## Download data
   #Variable and scenario names corresponding to MACA data directory structure

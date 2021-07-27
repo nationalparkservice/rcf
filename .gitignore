@@ -40,3 +40,4 @@ vignettes/*.pdf
 
 # Dataset needed to check code
 *.csv
+inst/doc

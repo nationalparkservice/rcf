@@ -16,11 +16,13 @@
 #' defaults to a temporary directory and files created will be lost after
 #' R session ends. Specify a path to retain files.
 #'
-#' @return three .csv files:
-#' 1.
-#' 2. SiteID_future_means_x.csv - future means of all models calculated on central year
-#' 3' SiteID_daily_future_x.csv - future data by model and day, future quadrants labeled
-#' _x: c = corner, q = quadrant
+#' @return Two (2) .csv files:
+#' 1.SiteID_future_means_x.csv - future means of all models calculated on central year
+#' 2. SiteID_future_y_x.csv - Summary of threshold values calculated based on method (x) and
+#' summary metric (y). Means are taken based on month/season/year and either all models in
+#' a quadrant for quadrant method, or most extreme model in each quadrant for corners method
+#' x: c = corner, q = quadrant
+#' y: month, season or year
 #' @export
 #'
 #' @examples
@@ -46,19 +48,17 @@
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
 
-year <- 2040
-data <- thresholds
 
 cf_quadrant <- function(SiteID,
                         data = NULL,
                         year,
-                        method = NULL,
-                        summarize_by = NULL,
+                        method = "quadrant",
+                        summarize_by = "year",
                         directory = tempdir()){
 
 
   rh_exists <-  any(names(data) == "rhmin")
-  if(!file.exists(".here")) here::set_here(directory)
+  suppressMessages(if(!file.exists(".here")) here::set_here(directory))
 
   # ---------
   #subset data for future to be 30 years around focus year
@@ -71,7 +71,7 @@ cf_quadrant <- function(SiteID,
     dplyr::filter(.data$yr %in% c(start_year:end_year))
 
   past_all <- data %>%
-    dplyr::filter(.data$yr < 2006) %>%
+    dplyr::filter(.data$yr < 2000) %>%
     dplyr::mutate(cf = "Historical")
 
   # ---------
@@ -149,9 +149,9 @@ if(method == "quadrant"){
 
   # this will output the scatterplot data
 
-  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
+
   readr::write_csv(quadrant_df, here::here(directory,
-                                           paste0(SiteID,"_future_means_q.csv"))))
+                                           paste0(SiteID,"_future_means_q.csv")))
 
   # future means = total mean centered on year selected, one for each model and rcp
 
@@ -214,9 +214,8 @@ if(method == "corners"){
     )) %>%
     dplyr::select(.data$gcm, .data$precip_change, .data$tmax_change, .data$tmin_change, .data$tavg_change, .data$cf, .data$corner)
 
-  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
-         readr::write_csv(corners_df, here::here(directory,
-                                                 paste0(SiteID, "_future_means_c.csv"))))
+  readr::write_csv(corners_df, here::here(directory,
+                                          paste0(SiteID, "_future_means_c.csv")))
 
 # future means = total mean centered on year selected, one for each model and rcp
 
@@ -272,27 +271,73 @@ if(summarize_by == "season" & method == "quadrant"){
   quadrant_cf_gcm <- quadrant_df %>%
     dplyr::select(.data$gcm, .data$cf) %>%
     dplyr::full_join(future_all, by = "gcm") %>%
+    dplyr::full_join(num_gcm, by = "cf") %>%
     dplyr::group_by(.data$cf, .data$quarter)
 
 }
-
-# --------
-# CROUP FOR YEAR and QUADRANT
-# --------
-
-if(summarize_by == "year" & method == "quadrant"){
-  quadrant_cf_gcm <- quadrant_df %>%
-    dplyr::select(.data$gcm, .data$cf) %>%
-    dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::group_by(.data$cf, .data$yr)
-}
-
 
 # -----------
 # SUMMARIZE THRESHOLD VALUES FOR QUADRANT
 # -----------
 
-if(method == "quadrant"){
+# --------
+# CROUP FOR YEAR and QUADRANT
+# --------
+# it is different than the others b/c it doesn't need to be divided by num yr
+if(summarize_by == "year" & method == "quadrant"){
+  method_cf_gcm <-  quadrant_df %>%
+    dplyr::select(.data$gcm, .data$cf) %>%
+    dplyr::full_join(future_all, by = "gcm") %>%
+    dplyr::full_join(num_gcm, by = "cf") %>%
+    dplyr::group_by(.data$cf, .data$yr) %>%
+    # grouped by month/season/year and climate future
+    # sums will be per month/season/year per climate future
+    dplyr::summarize(heat_index = if(rh_exists == TRUE)
+      mean(.data$heat_index, na.rm = TRUE),
+      heat_index_ec = if(rh_exists == TRUE)
+        sum(.data$heat_index_ec,
+            na.rm = TRUE) / unique(.data$num_of_gcms),
+      heat_index_dan = if(rh_exists == TRUE)
+        sum(.data$heat_index_dan,
+            na.rm = TRUE) / unique(.data$num_of_gcms),
+      temp_over_95_pctl = sum(.data$temp_over_95_pctl,
+                              na.rm = TRUE) / unique(.data$num_of_gcms),
+      temp_over_99_pctl = sum(.data$temp_over_99_pctl,
+                              na.rm = TRUE) / unique(.data$num_of_gcms),
+      temp_over_95_pctl_length = max(.data$temp_over_95_pctl_length,
+                                     na.rm = TRUE),
+      temp_under_freeze = sum(.data$temp_under_freeze,
+                              na.rm = TRUE) / unique(.data$num_of_gcms),
+      temp_under_freeze_length = max(.data$temp_under_freeze_length,
+                                     na.rm = TRUE),
+      temp_under_5_pctl = sum(.data$temp_under_5_pctl,
+                              na.rm = TRUE) / unique(.data$num_of_gcms),
+      no_precip = sum(.data$no_precip,
+                      na.rm = TRUE) / unique(.data$num_of_gcms),
+      no_precip_length = max(.data$no_precip_length, na.rm = TRUE),
+      precip_95_pctl = sum(.data$precip_95_pctl,
+                           na.rm = TRUE) / unique(.data$num_of_gcms),
+      precip_99_pctl = sum(.data$precip_99_pctl,
+                           na.rm = TRUE) / unique(.data$num_of_gcms),
+      precip_moderate = sum(.data$precip_moderate,
+                            na.rm = TRUE) / unique(.data$num_of_gcms),
+      precip_heavy = sum(.data$precip_heavy,
+                         na.rm = TRUE) / unique(.data$num_of_gcms),
+      freeze_thaw = sum(.data$freeze_thaw,
+                        na.rm = TRUE) / unique(.data$num_of_gcms),
+      gdd = sum(.data$gdd, na.rm = TRUE) / unique(.data$num_of_gcms),
+      gdd_count = max(.data$gdd_count, na.rm = TRUE),
+      not_gdd_count = max(.data$not_gdd_count, na.rm = TRUE),
+      frost = sum(.data$frost, na.rm = TRUE) / unique(.data$num_of_gcms),
+      grow_len = mean(.data$grow_len, na.rm = TRUE),
+      .groups = "keep")
+}
+
+# -------------
+# SUMMARIZE THRESHOLD VALUES FOR MONTH AND SEASON
+# -------------
+
+if(method == "quadrant" & summarize_by %in% c("month", "season")){
 
   method_cf_gcm <- quadrant_cf_gcm %>%
     # grouped by month/season/year and climate future
@@ -374,22 +419,50 @@ if(summarize_by == "season" & method == "corners"){
 }
 
 # --------
+# SUMMARIZE THRESHOLD VALUES FOR CORNERS
+# --------
+
+# --------
 # GROUP FOR YEAR and CORNERS
 # --------
 
 if(summarize_by == "year" & method == "corners"){
-  corners_cf_gcm <- corners_df %>%
+  method_cf_gcm <- corners_df %>%
     dplyr::select(.data$gcm, .data$cf, .data$corner) %>%
     dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::group_by(.data$corner, .data$yr)
+    dplyr::group_by(.data$corner, .data$yr) %>%
+    dplyr::summarize(heat_index = if(rh_exists == TRUE)
+      mean(.data$heat_index, na.rm = TRUE),
+      heat_index_ec = if(rh_exists == TRUE) sum(.data$heat_index_ec, na.rm = TRUE),
+      heat_index_dan = if(rh_exists == TRUE) sum(.data$heat_index_dan, na.rm = TRUE),
+      temp_over_95_pctl = sum(.data$temp_over_95_pctl, na.rm = TRUE),
+      temp_over_99_pctl = sum(.data$temp_over_99_pctl, na.rm = TRUE),
+      temp_over_95_pctl_length = max(.data$temp_over_95_pctl_length, na.rm = TRUE),
+      temp_under_freeze = sum(.data$temp_under_freeze, na.rm = TRUE),
+      temp_under_freeze_length = max(.data$temp_under_freeze_length, na.rm = TRUE),
+      temp_under_5_pctl = sum(.data$temp_under_5_pctl, na.rm = TRUE),
+      no_precip = sum(.data$no_precip, na.rm = TRUE),
+      no_precip_length = max(.data$no_precip_length, na.rm = TRUE),
+      precip_95_pctl = sum(.data$precip_95_pctl, na.rm = TRUE),
+      precip_99_pctl = sum(.data$precip_99_pctl,na.rm = TRUE),
+      precip_moderate = sum(.data$precip_moderate, na.rm = TRUE),
+      precip_heavy = sum(.data$precip_heavy, na.rm = TRUE),
+      freeze_thaw = sum(.data$freeze_thaw, na.rm = TRUE),
+      gdd = sum(.data$gdd, na.rm = TRUE),
+      gdd_count = max(.data$gdd_count, na.rm = TRUE),
+      not_gdd_count = max(.data$not_gdd_count, na.rm = TRUE),
+      frost = sum(.data$frost, na.rm = TRUE),
+      grow_len = mean(.data$grow_len, na.rm = TRUE),
+      .groups = "keep") %>%
+    tidyr::drop_na(.data$corner)
+
 }
 
-# --------
-# SUMMARIZE THRESHOLD VALUES FOR CORNERS
-# --------
+# ---------------
+# SUMMARIZE FOR CORNERS AND MONTH OR SEASON
+# ---------------
 
-
-if(method == "corners"){
+if(method == "corners" & summarize_by %in% c("month","season")){
 
   method_cf_gcm <- corners_cf_gcm %>%
     # grouped by month/season/year and climate future
@@ -430,40 +503,31 @@ if(method == "corners"){
 # # # #  CSV CREATION # # # #
 # -------------------------
 
-if(summarize_by == "month" & method == "quadrant"){
-  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
-         readr::write_csv(method_cf_gcm, here::here(directory,
-                                                    paste0(SiteID, "_future_month_q.csv"))))
-}
+#if directory isn't temp, save to local file
+# if it is temp, give warning and save to temp directory
 
-if(summarize_by == "season" & method == "quadrant"){
-  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
-         readr::write_csv(method_cf_gcm, here::here(directory,
-                                                    paste0(SiteID, "_future_season_q.csv"))))
-}
+if(directory == "tempdir()"){print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument.")}
 
-if(summarize_by == "year" & method == "quadrant"){
-  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
-         readr::write_csv(method_cf_gcm, here::here(directory,
-                                                    paste0(SiteID, "_future_year_q.csv"))))
-}
 
-if(summarize_by == "month" & method == "corners"){
-  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
-         readr::write_csv(method_cf_gcm, here::here(directory,
-                                                    paste0(SiteID, "_future_month_c.csv"))))
-}
 
-if(summarize_by == "season" & method == "corners"){
-  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
-         readr::write_csv(method_cf_gcm, here::here(directory,
-                                                    paste0(SiteID, "_future_season_c.csv"))))
-}
+if(method == "quadrant"){
 
-if(summarize_by == "year" & method == "corners"){
-  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
-         readr::write_csv(method_cf_gcm, here::here(directory,
-                                                    paste0(SiteID, "_future_year_c.csv"))))
-}
+  readr::write_csv(method_cf_gcm, here::here(directory,
+                                             paste0(SiteID, ifelse(summarize_by == "month",
+                                                                   "_future_month_q.csv",
+                                                                   ifelse(summarize_by == "season",
+                                                                          "_future_season_q.csv",
+                                                                          "_future_year_q.csv")))))
+  }
+
+if(method == "corners"){
+  readr::write_csv(method_cf_gcm, here::here(directory,
+                                             paste0(SiteID, ifelse(summarize_by == "month",
+                                                                   "_future_month_c.csv",
+                                                                   ifelse(summarize_by == "season",
+                                                                          "_future_season_c.csv",
+                                                                          "_future_year_c.csv")))))
+  }
+
 
 }# close function

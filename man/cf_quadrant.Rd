@@ -35,11 +35,13 @@ defaults to a temporary directory and files created will be lost after
 R session ends. Specify a path to retain files.}
 }
 \value{
-three .csv files:
-1.
-2. SiteID_future_means_x.csv - future means of all models calculated on central year
-3' SiteID_daily_future_x.csv - future data by model and day, future quadrants labeled
-_x: c = corner, q = quadrant
+Two (2) .csv files:
+1.SiteID_future_means_x.csv - future means of all models calculated on central year
+2. SiteID_future_y_x.csv - Summary of threshold values calculated based on method (x) and
+summary metric (y). Means are taken based on month/season/year and either all models in
+a quadrant for quadrant method, or most extreme model in each quadrant for corners method
+x: c = corner, q = quadrant
+y: month, season or year
 }
 \description{
 Calculate climate futures based on their quadrant

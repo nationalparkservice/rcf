@@ -15,6 +15,7 @@ RoxygenNote: 7.1.1
 Imports: 
     cft,
     dplyr,
+    ggplot2,
     here,
     lubridate,
     magrittr,
@@ -24,6 +25,11 @@ Imports:
     sp,
     stats,
     stringr,
+    tibble,
     tidyr
 URL: https://github.com/nationalparkservice/rcf
 BugReports: https://github.com/nationalparkservice/rcf/issues
+Suggests: 
+    rmarkdown,
+    knitr
+VignetteBuilder: knitr
