@@ -2,7 +2,7 @@
 % Please edit documentation in R/summarize_for_pca.R
 \name{summarize_for_pca}
 \alias{summarize_for_pca}
-\title{Title}
+\title{Summarize threshold values to allocate climate futures by PCA}
 \usage{
 summarize_for_pca(SiteID, data = NULL, year, directory = tempdir())
 }
@@ -11,7 +11,8 @@ summarize_for_pca(SiteID, data = NULL, year, directory = tempdir())
 directories. (character)}
 
 \item{data}{Default dataset to use for the .csv files this function will create.
-Follow vignette for example dataset creation. (data frame)}
+Follow vignette for example dataset creation. This should be the output of
+the \code{calc_thresholds} function (data frame)}
 
 \item{year}{year to center changes from historical data around (numeric)}
 
@@ -25,27 +26,29 @@ This csv can be directly used to calculate model selection by pca using the \cod
 function.
 }
 \description{
-Title
+Summarize threshold values to allocate climate futures by PCA
 }
 \examples{
 
-#' @examples
+
 \dontrun{
+
 # Generate sample data
 
 data <- data.frame(
 date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
-yr = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="year"), 100),
-gcm = paste0(rep(letters[1:5], each = 20),
-rep(letters[1:20], each = 5),
-rep(letters[20:26], each = 1)),
+yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 10),
+month = rep(c(1:10), each = 10),
+quarter = rep(rep(c("DJF", "MAM", "JJA", "SON"), each = 25)),
+gcm = rep(c("bcc-csm1-1.rcp45", "BNU-ESM.rcp45", "CanESM2.rcp85", "CCSM4.rcp45",
+"CSIRO-Mk3-6-0.rcp45"), each = 20),
 precip = rnorm(100),
 tmin = rnorm(100),
 tmax = rnorm(100),
 rhmax = rnorm(100),
 rhmin = rnorm(100),
-tavg = rnorm(100)
-heat_index = rnorm(100)
+tavg = rnorm(100),
+heat_index = rnorm(100),
 heat_index_ec = rnorm(100),
 heat_index_dan = rnorm(100),
 temp_over_95_pctl =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
@@ -65,9 +68,11 @@ gdd =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
 gdd_count = rnorm(100),
 not_gdd_count = rnorm(100),
 frost = sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-grow_len = rnorm(100)
+grow_len = rnorm(100),
+units = rep("imperial", each = 100)
 )
 
-summarize_for_pca("SCBL", data = data, 2040, directory = my_project_directory)
+summarize_for_pca("SCBL", data = data, 2040)
 }
+
 }

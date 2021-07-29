@@ -22,7 +22,9 @@
 #'
 #' data <- data.frame(
 #' date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
-#' yr = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="year"), 100),
+#' yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 10),
+#' month = rep(c(1:10), each = 10),
+#' quarter = rep(rep(c("DJF", "MAM", "JJA", "SON"), each = 25)),
 #' gcm = paste0(rep(letters[1:5], each = 20),
 #' rep(letters[1:20], each = 5),
 #' rep(letters[20:26], each = 1)),
@@ -55,10 +57,17 @@
 #' grow_len = rnorm(100)
 #' )
 #'
+#' pca_df <- data.frame(
+#'
+#' )
+#'
 #' pca_thresholds("SCBL", pca_data = pca_df, all_data = data, year = 2040,
-#' summarize_by = "month", directory = my_project_directory)
+#' summarize_by = "month")
 #' }
 #'
+#' @importFrom magrittr %>%
+#' @importFrom rlang .data
+
 pca_thresholds <- function(SiteID,
                            pca_data = NULL,
                            all_data = NULL,
@@ -77,7 +86,17 @@ pca_thresholds <- function(SiteID,
   #subset future data to be only for 30 yr period
 
   future_all <- all_data %>%
-    dplyr::filter(.data$yr %in% c(start_year:end_year))
+    dplyr::filter(.data$yr %in% c(start_year:end_year)) %>%
+    dplyr::mutate(time = "Future")
+
+  cf_gcm_only <- pca_data %>%
+    dplyr::select(.data$gcm, .data$prcomp, .data$cf)
+
+  past_all <- all_data %>%
+    dplyr::filter(.data$yr < 2000) %>%
+    dplyr::mutate(time = "Historical") %>%
+    dplyr::full_join(cf_gcm_only, by = "gcm")
+
 
   # --------------------
   # CALCULATE THRESHOLD VALUES BY PCA
@@ -87,11 +106,14 @@ pca_thresholds <- function(SiteID,
   # GROUP FOR MONTH and PCA
   # --------
 
+  suppressMessages(pca_cf_gcm <- pca_data %>%
+    dplyr::select(.data$gcm, .data$cf, .data$prcomp) %>%
+    dplyr::full_join(future_all, by = "gcm") %>%
+    dplyr::full_join(past_all))
+
   if(summarize_by == "month"){
-    pca_cf_gcm <- pca_data %>%
-      dplyr::select(.data$gcm, .data$cf, .data$prcomp) %>%
-      dplyr::full_join(future_all, by = "gcm") %>%
-      dplyr::group_by(.data$prcomp, .data$month)
+    pca_cf_gcm <- pca_cf_gcm %>%
+      dplyr::group_by(.data$prcomp, .data$month, .data$time)
   }
 
   # --------
@@ -99,10 +121,8 @@ pca_thresholds <- function(SiteID,
   # --------
 
   if(summarize_by == "season"){
-    pca_cf_gcm <- pca_data %>%
-      dplyr::select(.data$gcm, .data$cf, .data$prcomp) %>%
-      dplyr::full_join(future_all, by = "gcm") %>%
-      dplyr::group_by(.data$prcomp, .data$quarter)
+    pca_cf_gcm <- pca_cf_gcm %>%
+      dplyr::group_by(.data$prcomp, .data$quarter, .data$time)
   }
 
   # ---------------
@@ -116,14 +136,28 @@ pca_thresholds <- function(SiteID,
 
   if(summarize_by == "year"){
 
-    method_cf_gcm <- pca_data %>%
+    suppressMessages(
+      method_cf_gcm <- pca_data %>%
       dplyr::select(.data$gcm, .data$cf, .data$prcomp) %>%
-      dplyr::full_join(future_all, by = "gcm") %>%
-      dplyr::group_by(.data$prcomp, .data$yr) %>%
-      dplyr::summarize(heat_index = if(rh_exists == TRUE)
-        mean(.data$heat_index, na.rm = TRUE),
-        heat_index_ec = if(rh_exists == TRUE) sum(.data$heat_index_ec, na.rm = TRUE),
-        heat_index_dan = if(rh_exists == TRUE) sum(.data$heat_index_dan, na.rm = TRUE),
+      dplyr::full_join(future_all, by = "gcm")  %>%
+      dplyr::full_join(past_all) %>%
+      dplyr::group_by(.data$prcomp, .data$yr, .data$time) %>%
+      dplyr::summarize(cf = unique(cf),
+        precip_daily = mean(.data$precip, na.rm = TRUE),
+        tmin = mean(.data$tmin, na.rm = TRUE),
+        tmax = mean(.data$tmax, na.rm = TRUE),
+        tavg = mean(.data$tavg, na.rm = TRUE),
+        rhmin = ifelse(rh_exists == TRUE, mean(.data$rhmin, na.rm = TRUE),
+                                      NA_integer_),
+        rhmax = ifelse(rh_exists == TRUE, mean(.data$rhmax, na.rm = TRUE), NA_integer_),
+        heat_index = ifelse(rh_exists == TRUE, mean(.data$heat_index, na.rm = TRUE),
+                           NA_integer_),
+        heat_index_ec = ifelse(rh_exists == TRUE,
+                            sum(.data$heat_index_ec, na.rm = TRUE),
+                            NA_integer_),
+        heat_index_dan = ifelse(rh_exists == TRUE, sum(.data$heat_index_dan,
+                                                   na.rm = TRUE),
+                                NA_integer_),
         temp_over_95_pctl = sum(.data$temp_over_95_pctl, na.rm = TRUE),
         temp_over_99_pctl = sum(.data$temp_over_99_pctl, na.rm = TRUE),
         temp_over_95_pctl_length = max(.data$temp_over_95_pctl_length, na.rm = TRUE),
@@ -142,7 +176,9 @@ pca_thresholds <- function(SiteID,
         not_gdd_count = max(.data$not_gdd_count, na.rm = TRUE),
         frost = sum(.data$frost, na.rm = TRUE),
         grow_len = mean(.data$grow_len, na.rm = TRUE),
-        .groups = "keep")
+        units = unique(units),
+        .groups = "keep")) %>%
+      tidyr::drop_na(prcomp)
   }
 
   # ------------
@@ -155,10 +191,22 @@ pca_thresholds <- function(SiteID,
     method_cf_gcm <- pca_cf_gcm %>%
       # grouped by month/season/year and climate future
       # sums will be per month/season/year per climate future
-      dplyr::summarize(heat_index = if(rh_exists == TRUE)
-        mean(.data$heat_index, na.rm = TRUE),
-        heat_index_ec = if(rh_exists == TRUE) sum(.data$heat_index_ec, na.rm = TRUE) / 30,
-        heat_index_dan = if(rh_exists == TRUE) sum(.data$heat_index_dan, na.rm = TRUE) / 30,
+      dplyr::summarize(cf = unique(cf),
+        precip_daily = mean(.data$precip, na.rm = TRUE),
+        tmin = mean(.data$tmin, na.rm = TRUE),
+        tmax = mean(.data$tmax, na.rm = TRUE),
+        tavg = mean(.data$tavg, na.rm = TRUE),
+        rhmin = ifelse(rh_exists == TRUE, mean(.data$rhmin, na.rm = TRUE),
+                       NA_integer_),
+        rhmax = ifelse(rh_exists == TRUE, mean(.data$rhmax, na.rm = TRUE), NA_integer_),
+        heat_index = ifelse(rh_exists == TRUE, mean(.data$heat_index, na.rm = TRUE),
+                            NA_integer_),
+        heat_index_ec = ifelse(rh_exists == TRUE,
+                        sum(.data$heat_index_ec, na.rm = TRUE) / 30,
+                               NA_integer_),
+        heat_index_dan = ifelse(rh_exists == TRUE, sum(.data$heat_index_dan,
+                                                    na.rm = TRUE) / 30,
+                                NA_integer_),
         temp_over_95_pctl = sum(.data$temp_over_95_pctl, na.rm = TRUE) / 30,
         temp_over_99_pctl = sum(.data$temp_over_99_pctl, na.rm = TRUE) / 30,
         temp_over_95_pctl_length = max(.data$temp_over_95_pctl_length, na.rm = TRUE),
@@ -177,6 +225,7 @@ pca_thresholds <- function(SiteID,
         not_gdd_count = max(.data$not_gdd_count, na.rm = TRUE),
         frost = sum(.data$frost, na.rm = TRUE) / 30,
         grow_len = mean(.data$grow_len, na.rm = TRUE),
+        units = unique(units),
         .groups = "keep") %>%
       tidyr::drop_na(.data$prcomp)
 
@@ -196,10 +245,10 @@ if(directory == "tempdir()"){print("Files have been saved to temporary directory
 readr::write_csv(method_cf_gcm, here::here(directory,
                                            paste0(SiteID,
                                            ifelse(summarize_by == "month",
-                                                  "_future_month_pca.csv",
+                                                  "_month_summary_pca.csv",
                                                   ifelse(summarize_by == "season",
-                                                         "_future_season_pca.csv",
-                                                         "_future_year_pca.csv"
+                                                         "_season_summary_pca.csv",
+                                                         "_year_summary_pca.csv"
                                                                 )))))
 
 } #close function

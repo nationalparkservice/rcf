@@ -6,10 +6,10 @@
 #' @param data Default data set to use for .csv creation. Must be created
 #' prior to running function. Follow vignette for example data set creation (data frame)
 #' @param year year to center changes from historical data around (numeric)
-#' @param method method for calculating resulting .csv. Options "quadrant" and "corners".
+#' @param method method for calculating resulting .csv. Options "quadrant" and "corner".
 #' "quadrant" will return a data frame in which all models are labeled
 #' in their respective quadrants "hot wet" "hot dry" "warm wet" "warm dry" and "central
-#' "corners" will do the same, but additionally return the model that represents
+#' "corner" will do the same, but additionally return the model that represents
 #' the most extreme scenario in each quadrant
 #' @param summarize_by how to summarize the data, options are "month", "season", "year"
 #' @param directory where to save files to. Per CRAN guidelines, this
@@ -18,9 +18,9 @@
 #'
 #' @return Two (2) .csv files:
 #' 1.SiteID_future_means_x.csv - future means of all models calculated on central year
-#' 2. SiteID_future_y_x.csv - Summary of threshold values calculated based on method (x) and
+#' 2. SiteID_y_summary_x.csv - Summary of threshold values calculated based on method (x) and
 #' summary metric (y). Means are taken based on month/season/year and either all models in
-#' a quadrant for quadrant method, or most extreme model in each quadrant for corners method
+#' a quadrant for quadrant method, or most extreme model in each quadrant for corner method
 #' x: c = corner, q = quadrant
 #' y: month, season or year
 #' @export
@@ -31,10 +31,9 @@
 #'
 #' df <- data.frame(
 #' date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
-#' yr = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="year"), 100),
-#' gcm = paste0(rep(letters[1:5], each = 20),
-#' rep(letters[1:20], each = 5),
-#' rep(letters[20:26], each = 1)),
+#' yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 10),
+#' gcm = rep(c("bcc-csm1-1.rcp45", "BNU-ESM.rcp45", "CanESM2.rcp85", "CCSM4.rcp45",
+#' "CSIRO-Mk3-6-0.rcp45"), each = 20),
 #' precip = rnorm(100),
 #' tmin = rnorm(100),
 #' tmax = rnorm(100),
@@ -43,11 +42,10 @@
 #' tavg = rnorm(100)
 #' )
 #'
-#' cf_quadrant("SCBL", data = df, year = 2040, method = "corners", summarize_by = "year")
+#' cf_quadrant("SCBL", data = df, year = 2040, method = "corner", summarize_by = "year")
 #'}
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
-
 
 cf_quadrant <- function(SiteID,
                         data = NULL,
@@ -64,15 +62,17 @@ cf_quadrant <- function(SiteID,
   #subset data for future to be 30 years around focus year
   # ---------
 
+
   start_year <- year - 15
   end_year <- year + 15
 
   future_all <- data %>%
-    dplyr::filter(.data$yr %in% c(start_year:end_year))
+    dplyr::filter(.data$yr %in% c(start_year:end_year)) %>%
+    dplyr::mutate(time = "Future")
 
   past_all <- data %>%
     dplyr::filter(.data$yr < 2000) %>%
-    dplyr::mutate(cf = "Historical")
+    dplyr::mutate(time = "Historical")
 
   # ---------
   # create means for past and future
@@ -102,7 +102,8 @@ change <- future_mean %>%
                    precip_change = .data$precip_mean_f - past_mean$precip_mean_p,
                    tmax_change = .data$tmax_mean_f - past_mean$tmax_mean_p,
                    tmin_change = .data$tmin_mean_f - past_mean$tmin_mean_p,
-                   tavg_change = .data$tavg_mean_f - past_mean$tavg_mean_p)
+
+                  tavg_change = .data$tavg_mean_f - past_mean$tavg_mean_p)
 
 
 # -------------------------------
@@ -124,7 +125,6 @@ Tavg25 = as.numeric(stats::quantile(change$tavg_change, 0.25))
 Tavg = as.numeric(mean(change$tavg_change))
 Tavg75 = as.numeric(stats::quantile(change$tavg_change, 0.75))
 Tavg100 = as.numeric(stats::quantile(change$tavg_change, 1))
-
 # ---------
 # calculate climate futures based on model
 # ---------
@@ -141,12 +141,17 @@ quadrant_df <- change %>%
     TRUE ~ "Hot Dry"
   ))
 
-# -----------
-# # # # # QUADRANT METHOD # # # #
-# -----------
+
+
+# --------------------------------------------------------
+# # # # # # # # # # QUADRANT METHOD # # # # # # # # # # #
+# --------------------------------------------------------
+
+
 
 if(method == "quadrant"){
 
+  # no mor manipulation needed for future means for quadrant
   # this will output the scatterplot data
 
 
@@ -155,86 +160,19 @@ if(method == "quadrant"){
 
   # future means = total mean centered on year selected, one for each model and rcp
 
+  # ----------------
+  # Attach climate futures to baseline data
+  # ----------------
 
-}#close if for method quadrant
+  cf_gcm_only <- quadrant_df %>%
+    dplyr::select(.data$gcm, .data$cf)
 
+  past_all <- past_all %>%
+    dplyr::full_join(cf_gcm_only, by = "gcm")
 
-# ------------
-# # # # CORNERS METHOD # # # #
-# ------------
-
-
-if(method == "corners"){
-  # this will output the scatterplot data
-
-  # -----
-  # create function for euclidean distance
-  # -----
-
-  euclidean <- function(a, b, c, d) sqrt(((a - b)^2 + (c - d)^2))
-
-  # -----
-  # calculate euc distance from each corner
-  # -----
-
-  corners_df <- quadrant_df %>%
-    dplyr::mutate(temp_min = min(scales::rescale(.data$tavg_change, to = c(-1,1))),
-                  temp_max = max(scales::rescale(.data$tavg_change, to = c(-1,1))),
-                  precip_min = min(scales::rescale(.data$precip_change, to = c(-1,1))),
-                  precip_max = max(scales::rescale(.data$precip_change, to = c(-1,1)))) %>%
-    dplyr::mutate(tavg_scale = scales::rescale(.data$tavg_change, to = c(-1,1)),
-                  precip_scale = scales::rescale(.data$precip_change)) %>%
-    dplyr::mutate(euc_warm_wet = euclidean(.data$tavg_scale,
-                                           .data$temp_min,
-                                           .data$precip_scale,
-                                           .data$precip_max),
-                  # upper left hand corner, max precip, min temp
-                  euc_warm_dry = euclidean(.data$tavg_scale,
-                                           .data$temp_min,
-                                           .data$precip_scale,
-                                           .data$precip_min),
-                  # lower left hand corner, min precip, min temp
-                  euc_hot_wet = euclidean(.data$tavg_scale,
-                                          .data$temp_max,
-                                          .data$precip_scale,
-                                          .data$precip_max),
-                  # upper right hand corner, max precip, max temp
-                  euc_hot_dry = euclidean(.data$tavg_scale,
-                                          .data$temp_max,
-                                          .data$precip_scale,
-                                          .data$precip_min)
-                  # lower right hand corner, min precip, max temp
-                  ) %>%
-    dplyr::mutate(corner = dplyr::case_when(
-      euc_warm_wet == min(euc_warm_wet) ~ "Warm Wet",
-      euc_warm_dry == min(euc_warm_dry) ~ "Warm Dry",
-      euc_hot_wet == min(euc_hot_wet) ~ "Hot Wet",
-      euc_hot_dry == min(euc_hot_dry) ~ "Hot Dry",
-      TRUE ~ NA_character_
-    )) %>%
-    dplyr::select(.data$gcm, .data$precip_change, .data$tmax_change, .data$tmin_change, .data$tavg_change, .data$cf, .data$corner)
-
-  readr::write_csv(corners_df, here::here(directory,
-                                          paste0(SiteID, "_future_means_c.csv")))
-
-# future means = total mean centered on year selected, one for each model and rcp
-
-}#close if for method corners
-
-
-
-# -----------------
-# # # # SUMMARIZE THRESHOLD VALUES # # # #
-# -----------------
-
-
-#--------------
-# QUADRANT
-# -------------
-
-# get the number of gcms in each quadrant
-
-if(method == "quadrant"){
+  # ------------
+  # get the number of gcms in each quadrant
+  # ------------
 
 num_gcm <- quadrant_df %>%
   dplyr::summarise(`Warm Wet` = sum(stringr::str_count(.data$cf, "Warm Wet")),
@@ -245,34 +183,35 @@ num_gcm <- quadrant_df %>%
   tidyr::pivot_longer(.data$`Warm Wet`:.data$Central,
                       names_to = "cf",
                       values_to = "num_of_gcms")
+
+
+suppressMessages(quadrant_cf_gcm <- quadrant_df %>%
+  dplyr::select(.data$gcm, .data$cf) %>%
+  dplyr::full_join(future_all, by = "gcm") %>%
+  dplyr::full_join(past_all) %>%
+  dplyr::full_join(num_gcm, by = "cf"))
+
+# break into if statements based on summarize_by
+
+# --------
+# GROUP FOR MONTH
+# --------
+
+if(summarize_by == "month"){
+ method_cf_gcm_1 <- quadrant_cf_gcm %>%
+  dplyr::group_by(.data$month, .data$cf, .data$time)
+ # month, climate future, past or future
 }
 
-# break into if statements based on method and summarize_by
-
 # --------
-# GROUP FOR MONTH and QUADRANT
+# GROUP FOR SEASON
 # --------
 
-if(summarize_by == "month" & method == "quadrant"){
+if(summarize_by == "season"){
 
-  quadrant_cf_gcm <- quadrant_df %>%
-    dplyr::select(.data$gcm, .data$cf) %>%
-    dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::full_join(num_gcm, by = "cf") %>%
-    dplyr::group_by(.data$month, .data$cf)
-}
-
-# --------
-# GROUP FOR SEASON and QUADRANT
-# --------
-
-if(summarize_by == "season" & method == "quadrant"){
-
-  quadrant_cf_gcm <- quadrant_df %>%
-    dplyr::select(.data$gcm, .data$cf) %>%
-    dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::full_join(num_gcm, by = "cf") %>%
-    dplyr::group_by(.data$cf, .data$quarter)
+  method_cf_gcm_1 <- quadrant_cf_gcm %>%
+    dplyr::group_by(.data$cf, .data$quarter, .data$time)
+  # climate future, season, past or future
 
 }
 
@@ -281,25 +220,30 @@ if(summarize_by == "season" & method == "quadrant"){
 # -----------
 
 # --------
-# CROUP FOR YEAR and QUADRANT
+# GROUP FOR YEAR
 # --------
+
+
 # it is different than the others b/c it doesn't need to be divided by num yr
-if(summarize_by == "year" & method == "quadrant"){
-  method_cf_gcm <-  quadrant_df %>%
-    dplyr::select(.data$gcm, .data$cf) %>%
-    dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::full_join(num_gcm, by = "cf") %>%
-    dplyr::group_by(.data$cf, .data$yr) %>%
+if(summarize_by == "year"){
+  method_cf_gcm <-  quadrant_cf_gcm %>%
+    dplyr::group_by(.data$cf, .data$yr, .data$time) %>%
     # grouped by month/season/year and climate future
     # sums will be per month/season/year per climate future
-    dplyr::summarize(heat_index = if(rh_exists == TRUE)
-      mean(.data$heat_index, na.rm = TRUE),
-      heat_index_ec = if(rh_exists == TRUE)
-        sum(.data$heat_index_ec,
-            na.rm = TRUE) / unique(.data$num_of_gcms),
-      heat_index_dan = if(rh_exists == TRUE)
+    dplyr::summarize(precip_daily =mean(.data$precip),
+      #mean is mean of all cfs over month/season/year
+      tmin = mean(.data$tmin, na.rm = TRUE),
+      tmax = mean(.data$tmax, na.rm = TRUE),
+      tavg = mean(.data$tavg, na.rm = TRUE),
+      rhmin = ifelse(rh_exists == TRUE, mean(.data$rhmin, na.rm = TRUE), NA_integer_),
+      rhmax = ifelse(rh_exists == TRUE, mean(.data$rhmax, na.rm = TRUE), NA_integer_),
+      heat_index = ifelse(rh_exists == TRUE, mean(.data$heat_index, na.rm = TRUE),
+                          NA_integer_),
+      heat_index_ec = ifelse(rh_exists == TRUE, sum(.data$heat_index_ec,
+            na.rm = TRUE) / unique(.data$num_of_gcms), NA_integer_),
+      heat_index_dan = ifelse(rh_exists == TRUE,
         sum(.data$heat_index_dan,
-            na.rm = TRUE) / unique(.data$num_of_gcms),
+            na.rm = TRUE) / unique(.data$num_of_gcms), NA_integer_),
       temp_over_95_pctl = sum(.data$temp_over_95_pctl,
                               na.rm = TRUE) / unique(.data$num_of_gcms),
       temp_over_99_pctl = sum(.data$temp_over_99_pctl,
@@ -330,26 +274,33 @@ if(summarize_by == "year" & method == "quadrant"){
       not_gdd_count = max(.data$not_gdd_count, na.rm = TRUE),
       frost = sum(.data$frost, na.rm = TRUE) / unique(.data$num_of_gcms),
       grow_len = mean(.data$grow_len, na.rm = TRUE),
+      units = unique(units),
       .groups = "keep")
-}
+} # close summarize by year
 
 # -------------
 # SUMMARIZE THRESHOLD VALUES FOR MONTH AND SEASON
 # -------------
 
-if(method == "quadrant" & summarize_by %in% c("month", "season")){
+if(summarize_by %in% c("month", "season")){
 
-  method_cf_gcm <- quadrant_cf_gcm %>%
+  method_cf_gcm <- method_cf_gcm_1 %>%
     # grouped by month/season/year and climate future
     # sums will be per month/season/year per climate future
-    dplyr::summarize(heat_index = if(rh_exists == TRUE)
-      mean(.data$heat_index, na.rm = TRUE),
-      heat_index_ec = if(rh_exists == TRUE)
-        sum(.data$heat_index_ec,
-            na.rm = TRUE) / (30 * unique(.data$num_of_gcms)),
-      heat_index_dan = if(rh_exists == TRUE)
-        sum(.data$heat_index_dan,
-            na.rm = TRUE) / (30 * unique(.data$num_of_gcms)),
+    dplyr::summarize(precip_daily = mean(.data$precip, na.rm = TRUE),
+      tmin = mean(.data$tmin, na.rm = TRUE),
+      tmax = mean(.data$tmax, na.rm = TRUE),
+      tavg = mean(.data$tavg, na.rm = TRUE),
+      rhmin = ifelse(rh_exists == TRUE, mean(.data$rhmin, na.rm = TRUE), NA_integer_),
+      rhmax = ifelse(rh_exists == TRUE, mean(.data$rhmax, na.rm = TRUE), NA_integer_),
+      heat_index = ifelse(rh_exists == TRUE, mean(.data$heat_index, na.rm = TRUE),
+                          NA_integer_),
+      heat_index_ec = ifelse(rh_exists == TRUE, sum(.data$heat_index_ec,
+                                                    na.rm = TRUE) / unique(.data$num_of_gcms),
+                             NA_integer_),
+      heat_index_dan = ifelse(rh_exists == TRUE,
+                              sum(.data$heat_index_dan,
+                                  na.rm = TRUE) / unique(.data$num_of_gcms), NA_integer_),
       temp_over_95_pctl = sum(.data$temp_over_95_pctl,
                               na.rm = TRUE) / (30 * unique(.data$num_of_gcms)),
       temp_over_99_pctl = sum(.data$temp_over_99_pctl,
@@ -380,6 +331,7 @@ if(method == "quadrant" & summarize_by %in% c("month", "season")){
       not_gdd_count = max(.data$not_gdd_count, na.rm = TRUE),
       frost = sum(.data$frost, na.rm = TRUE) / (30 * unique(.data$num_of_gcms)),
       grow_len = mean(.data$grow_len, na.rm = TRUE),
+      units = unique(units),
       .groups = "keep")
 
   # (sum of threshold value, per month/season/year, per cf)
@@ -389,52 +341,136 @@ if(method == "quadrant" & summarize_by %in% c("month", "season")){
   # assign("method_cf_gcm", method_cf_gcm, envir = .GlobalEnv)
   # move the df to global env for later use
 
-}
+} # close summarize by season or month
+} #close method == quadrant
 
 
-# ------------------
-# CORNERS
-# ------------------
+# --------------------------------------------------------------
+# # # # # # # # # # # # # # CORNER # # # # # # # # # # # # # #
+# --------------------------------------------------------------
+
+
+# ------------
+# # # # corner METHOD # # # #
+# ------------
+
+
+if(method == "corner"){
+  # this will output the scatterplot data
+
+  # -----
+  # create function for euclidean distance
+  # -----
+
+  euclidean <- function(a, b, c, d) sqrt(((a - b)^2 + (c - d)^2))
+
+  # -----
+  # calculate euc distance from each corner
+  # -----
+
+  corner_df <- quadrant_df %>%
+    dplyr::mutate(temp_min = min(scales::rescale(.data$tavg_change, to = c(-1,1))),
+                  temp_max = max(scales::rescale(.data$tavg_change, to = c(-1,1))),
+                  precip_min = min(scales::rescale(.data$precip_change, to = c(-1,1))),
+                  precip_max = max(scales::rescale(.data$precip_change, to = c(-1,1)))) %>%
+    dplyr::mutate(tavg_scale = scales::rescale(.data$tavg_change, to = c(-1,1)),
+                  precip_scale = scales::rescale(.data$precip_change)) %>%
+    dplyr::mutate(euc_warm_wet = euclidean(.data$tavg_scale,
+                                           .data$temp_min,
+                                           .data$precip_scale,
+                                           .data$precip_max),
+                  # upper left hand corner, max precip, min temp
+                  euc_warm_dry = euclidean(.data$tavg_scale,
+                                           .data$temp_min,
+                                           .data$precip_scale,
+                                           .data$precip_min),
+                  # lower left hand corner, min precip, min temp
+                  euc_hot_wet = euclidean(.data$tavg_scale,
+                                          .data$temp_max,
+                                          .data$precip_scale,
+                                          .data$precip_max),
+                  # upper right hand corner, max precip, max temp
+                  euc_hot_dry = euclidean(.data$tavg_scale,
+                                          .data$temp_max,
+                                          .data$precip_scale,
+                                          .data$precip_min)
+                  # lower right hand corner, min precip, max temp
+    ) %>%
+    dplyr::mutate(corner = dplyr::case_when(
+      euc_warm_wet == min(euc_warm_wet) ~ "Warm Wet",
+      euc_warm_dry == min(euc_warm_dry) ~ "Warm Dry",
+      euc_hot_wet == min(euc_hot_wet) ~ "Hot Wet",
+      euc_hot_dry == min(euc_hot_dry) ~ "Hot Dry",
+      TRUE ~ NA_character_
+    )) %>%
+    dplyr::select(.data$gcm, .data$precip_change, .data$tmax_change, .data$tmin_change, .data$tavg_change, .data$cf, .data$corner)
+
+  readr::write_csv(corner_df, here::here(directory,
+                                         paste0(SiteID, "_future_means_c.csv")))
+
+
+  # -----------------------
+  # Attach climate futures to baseline data
+  # ----------------
+
+  cf_gcm_only <- corner_df %>%
+    dplyr::select(.data$gcm, .data$cf, .data$corner)
+
+  past_all <- past_all %>%
+    dplyr::full_join(cf_gcm_only, by = "gcm")
+
+  # future means = total mean centered on year selected, one for each model and rcp
+
 
 # --------
-# GROUP FOR MONTH and CORNERS
+# GROUP FOR MONTH
 # --------
 
-if(summarize_by == "month" & method == "corners"){
-  corners_cf_gcm <- corners_df %>%
+
+  suppressMessages(corner_cf_gcm <- corner_df %>%
     dplyr::select(.data$gcm, .data$cf, .data$corner) %>%
     dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::group_by(.data$corner, .data$month)
+    dplyr::full_join(past_all))
+
+if(summarize_by == "month"){
+   method_cf_gcm_1 <- corner_cf_gcm %>%
+    dplyr::group_by(.data$corner, .data$month, .data$time)
 }
 
 # --------
-# GROUP FOR SEASON and CORNERS
+# GROUP FOR SEASON and corner
 # --------
 
-if(summarize_by == "season" & method == "corners"){
-  corners_cf_gcm <- corners_df %>%
-    dplyr::select(.data$gcm, .data$cf, .data$corner) %>%
-    dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::group_by(.data$corner, .data$quarter)
+if(summarize_by == "season"){
+  method_cf_gcm_1 <- corner_cf_gcm %>%
+    dplyr::group_by(.data$corner, .data$quarter, .data$time)
 }
 
 # --------
-# SUMMARIZE THRESHOLD VALUES FOR CORNERS
+# SUMMARIZE THRESHOLD VALUES FOR corner
 # --------
 
 # --------
-# GROUP FOR YEAR and CORNERS
+# GROUP FOR YEAR and corner
 # --------
 
-if(summarize_by == "year" & method == "corners"){
-  method_cf_gcm <- corners_df %>%
-    dplyr::select(.data$gcm, .data$cf, .data$corner) %>%
-    dplyr::full_join(future_all, by = "gcm") %>%
-    dplyr::group_by(.data$corner, .data$yr) %>%
-    dplyr::summarize(heat_index = if(rh_exists == TRUE)
-      mean(.data$heat_index, na.rm = TRUE),
-      heat_index_ec = if(rh_exists == TRUE) sum(.data$heat_index_ec, na.rm = TRUE),
-      heat_index_dan = if(rh_exists == TRUE) sum(.data$heat_index_dan, na.rm = TRUE),
+if(summarize_by == "year"){
+  method_cf_gcm <- corner_cf_gcm %>%
+    dplyr::group_by(.data$corner, .data$yr, .data$time) %>%
+    dplyr::filter(.data$corner %in% c("Hot Wet", "Hot Dry", "Warm Wet", "Warm Dry")) %>%
+    dplyr::summarize(gcm = unique(.data$gcm),
+      precip_daily = mean(.data$precip, na.rm = TRUE),
+      tmin = mean(.data$tmin, na.rm = TRUE),
+      tmax = mean(.data$tmax, na.rm = TRUE),
+      tavg = mean(.data$tavg, na.rm = TRUE),
+      rhmin = ifelse(rh_exists == TRUE, mean(.data$rhmin, na.rm = TRUE), NA_integer_),
+      rhmax = ifelse(rh_exists == TRUE, mean(.data$rhmax, na.rm = TRUE), NA_integer_),
+      heat_index = ifelse(rh_exists == TRUE, mean(.data$heat_index, na.rm = TRUE),
+                          NA_integer_),
+      heat_index_ec = ifelse(rh_exists == TRUE, sum(.data$heat_index_ec, na.rm = TRUE),
+                             NA_integer_),
+      heat_index_dan = ifelse(rh_exists == TRUE,
+                              sum(.data$heat_index_dan, na.rm = TRUE), NA_integer_),
       temp_over_95_pctl = sum(.data$temp_over_95_pctl, na.rm = TRUE),
       temp_over_99_pctl = sum(.data$temp_over_99_pctl, na.rm = TRUE),
       temp_over_95_pctl_length = max(.data$temp_over_95_pctl_length, na.rm = TRUE),
@@ -453,24 +489,35 @@ if(summarize_by == "year" & method == "corners"){
       not_gdd_count = max(.data$not_gdd_count, na.rm = TRUE),
       frost = sum(.data$frost, na.rm = TRUE),
       grow_len = mean(.data$grow_len, na.rm = TRUE),
-      .groups = "keep") %>%
-    tidyr::drop_na(.data$corner)
+      units = unique(units),
+      .groups = "keep")
 
 }
 
+
 # ---------------
-# SUMMARIZE FOR CORNERS AND MONTH OR SEASON
+# SUMMARIZE FOR corner AND MONTH OR SEASON
 # ---------------
 
-if(method == "corners" & summarize_by %in% c("month","season")){
+if(summarize_by %in% c("month", "season")){
 
-  method_cf_gcm <- corners_cf_gcm %>%
+  method_cf_gcm <- method_cf_gcm_1 %>%
     # grouped by month/season/year and climate future
     # sums will be per month/season/year per climate future
-    dplyr::summarize(heat_index = if(rh_exists == TRUE)
-      mean(.data$heat_index, na.rm = TRUE),
-      heat_index_ec = if(rh_exists == TRUE) sum(.data$heat_index_ec, na.rm = TRUE) / 30,
-      heat_index_dan = if(rh_exists == TRUE) sum(.data$heat_index_dan, na.rm = TRUE) / 30,
+    dplyr::filter(.data$corner %in% c("Hot Wet", "Hot Dry", "Warm Wet", "Warm Dry")) %>%
+    dplyr::summarize(gcm = unique(.data$gcm),
+      precip_daily =mean(.data$precip, na.rm = TRUE),
+      tmin = mean(.data$tmin, na.rm = TRUE),
+      tmax = mean(.data$tmax, na.rm = TRUE),
+      tavg = mean(.data$tavg, na.rm = TRUE),
+      rhmin = ifelse(rh_exists == TRUE, mean(.data$rhmin, na.rm = TRUE), NA_integer_),
+      rhmax = ifelse(rh_exists == TRUE, mean(.data$rhmax, na.rm = TRUE), NA_integer_),
+      heat_index = ifelse(rh_exists == TRUE, mean(.data$heat_index, na.rm = TRUE),
+                          NA_integer_),
+      heat_index_ec = ifelse(rh_exists == TRUE, sum(.data$heat_index_ec, na.rm = TRUE) / 30,
+                             NA_integer_),
+      heat_index_dan = ifelse(rh_exists == TRUE,
+                              sum(.data$heat_index_dan, na.rm = TRUE) / 30, NA_integer_),
       temp_over_95_pctl = sum(.data$temp_over_95_pctl, na.rm = TRUE) / 30,
       temp_over_99_pctl = sum(.data$temp_over_99_pctl, na.rm = TRUE) / 30,
       temp_over_95_pctl_length = max(.data$temp_over_95_pctl_length, na.rm = TRUE),
@@ -489,8 +536,8 @@ if(method == "corners" & summarize_by %in% c("month","season")){
       not_gdd_count = max(.data$not_gdd_count, na.rm = TRUE),
       frost = sum(.data$frost, na.rm = TRUE) / 30,
       grow_len = mean(.data$grow_len, na.rm = TRUE),
-      .groups = "keep") %>%
-    tidyr::drop_na(.data$corner)
+      units = unique(units),
+      .groups = "keep")
 
   # (sum of threshold value, per month/season/year, per cf)
   # divided by (30 years * number of gcms in a quadrant) =
@@ -498,6 +545,7 @@ if(method == "corners" & summarize_by %in% c("month","season")){
 
 }
 
+} # close for method == corner
 
 # -------------------------
 # # # #  CSV CREATION # # # #
@@ -514,20 +562,19 @@ if(method == "quadrant"){
 
   readr::write_csv(method_cf_gcm, here::here(directory,
                                              paste0(SiteID, ifelse(summarize_by == "month",
-                                                                   "_future_month_q.csv",
+                                                                   "_month_summary_q.csv",
                                                                    ifelse(summarize_by == "season",
-                                                                          "_future_season_q.csv",
-                                                                          "_future_year_q.csv")))))
+                                                                          "_season__summary_q.csv",
+                                                                          "_year_summary_q.csv")))))
   }
 
-if(method == "corners"){
+if(method == "corner"){
   readr::write_csv(method_cf_gcm, here::here(directory,
                                              paste0(SiteID, ifelse(summarize_by == "month",
-                                                                   "_future_month_c.csv",
+                                                                   "_month_summary_c.csv",
                                                                    ifelse(summarize_by == "season",
-                                                                          "_future_season_c.csv",
-                                                                          "_future_year_c.csv")))))
-  }
-
+                                                                          "_season_summary_c.csv",
+                                                                          "_year_summary_c.csv")))))
+}
 
 }# close function

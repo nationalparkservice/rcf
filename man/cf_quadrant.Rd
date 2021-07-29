@@ -8,8 +8,8 @@ cf_quadrant(
   SiteID,
   data = NULL,
   year,
-  method = NULL,
-  summarize_by = NULL,
+  method = "quadrant",
+  summarize_by = "year",
   directory = tempdir()
 )
 }
@@ -22,10 +22,10 @@ prior to running function. Follow vignette for example data set creation (data f
 
 \item{year}{year to center changes from historical data around (numeric)}
 
-\item{method}{method for calculating resulting .csv. Options "quadrant" and "corners".
+\item{method}{method for calculating resulting .csv. Options "quadrant" and "corner".
 "quadrant" will return a data frame in which all models are labeled
 in their respective quadrants "hot wet" "hot dry" "warm wet" "warm dry" and "central
-"corners" will do the same, but additionally return the model that represents
+"corner" will do the same, but additionally return the model that represents
 the most extreme scenario in each quadrant}
 
 \item{summarize_by}{how to summarize the data, options are "month", "season", "year"}
@@ -39,7 +39,7 @@ Two (2) .csv files:
 1.SiteID_future_means_x.csv - future means of all models calculated on central year
 2. SiteID_future_y_x.csv - Summary of threshold values calculated based on method (x) and
 summary metric (y). Means are taken based on month/season/year and either all models in
-a quadrant for quadrant method, or most extreme model in each quadrant for corners method
+a quadrant for quadrant method, or most extreme model in each quadrant for corner method
 x: c = corner, q = quadrant
 y: month, season or year
 }
@@ -52,10 +52,9 @@ Calculate climate futures based on their quadrant
 
 df <- data.frame(
 date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
-yr = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="year"), 100),
-gcm = paste0(rep(letters[1:5], each = 20),
-rep(letters[1:20], each = 5),
-rep(letters[20:26], each = 1)),
+yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 10),
+gcm = rep(c("bcc-csm1-1.rcp45", "BNU-ESM.rcp45", "CanESM2.rcp85", "CCSM4.rcp45",
+"CSIRO-Mk3-6-0.rcp45"), each = 20),
 precip = rnorm(100),
 tmin = rnorm(100),
 tmax = rnorm(100),
@@ -64,6 +63,6 @@ rhmin = rnorm(100),
 tavg = rnorm(100)
 )
 
-cf_quadrant("SCBL", data = df, year = 2040, method = "corners", summarize_by = "year")
+cf_quadrant("SCBL", data = df, year = 2040, method = "corner", summarize_by = "year")
 }
 }

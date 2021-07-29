@@ -42,7 +42,9 @@ Summarize threshold values by PCA and month, season, or year
 
 data <- data.frame(
 date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
-yr = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="year"), 100),
+yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 10),
+month = rep(c(1:10), each = 10),
+quarter = rep(rep(c("DJF", "MAM", "JJA", "SON"), each = 25)),
 gcm = paste0(rep(letters[1:5], each = 20),
 rep(letters[1:20], each = 5),
 rep(letters[20:26], each = 1)),
@@ -75,8 +77,12 @@ frost = sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
 grow_len = rnorm(100)
 )
 
+pca_df <- data.frame(
+
+)
+
 pca_thresholds("SCBL", pca_data = pca_df, all_data = data, year = 2040,
-summarize_by = "month", directory = my_project_directory)
+summarize_by = "month")
 }
 
 }

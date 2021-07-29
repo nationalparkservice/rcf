@@ -7,7 +7,6 @@
 cf_pca(
   SiteID,
   data = NULL,
-  year,
   variables = NULL,
   num_cf = 4,
   directory = tempdir()
@@ -19,8 +18,6 @@ directories. (character)}
 
 \item{data}{Default dataset to use for the .csv files this function will create.
 Follow vignette for example dataset creation. (data frame)}
-
-\item{year}{year to center changes from historical data around (numeric)}
 
 \item{variables}{Variables you want the PCA to be based off of. Must match column names in
 \code{data} parameter exactly. If running directly from \code{summarize_for_pca} and would like
@@ -50,7 +47,9 @@ Title
 
 data <- data.frame(
 date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
-yr = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="year"), 100),
+yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 10),
+month = rep(c(1:10), each = 10),
+quarter = rep(rep(c("DJF", "MAM", "JJA", "SON"), each = 25)),
 gcm = paste0(rep(letters[1:5], each = 20),
 rep(letters[1:20], each = 5),
 rep(letters[20:26], each = 1)),
@@ -84,6 +83,6 @@ grow_len = rnorm(100)
 )
 
 cf_pca("SCBL", data = data, year = 2040, variables = c("tmin", "tmax", "rhmin"),
-num_cf = 2, directory = my_project_directory)
+num_cf = 2)
 }
 }

@@ -6,7 +6,6 @@
 #'  directories. (character)
 #' @param data Default dataset to use for the .csv files this function will create.
 #' Follow vignette for example dataset creation. (data frame)
-#' @param year year to center changes from historical data around (numeric)
 #' @param variables Variables you want the PCA to be based off of. Must match column names in
 #' `data` parameter exactly. If running directly from `summarize_for_pca` and would like
 #' to use all threshold values to select models, write "all_threshold"
@@ -31,7 +30,9 @@
 #'
 #' data <- data.frame(
 #' date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
-#' yr = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="year"), 100),
+#' yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 10),
+#' month = rep(c(1:10), each = 10),
+#' quarter = rep(rep(c("DJF", "MAM", "JJA", "SON"), each = 25)),
 #' gcm = paste0(rep(letters[1:5], each = 20),
 #' rep(letters[1:20], each = 5),
 #' rep(letters[20:26], each = 1)),
@@ -65,8 +66,11 @@
 #' )
 #'
 #' cf_pca("SCBL", data = data, year = 2040, variables = c("tmin", "tmax", "rhmin"),
-#' num_cf = 2, directory = my_project_directory)
+#' num_cf = 2)
 #' }
+#'
+#' @importFrom magrittr %>%
+#' @importFrom rlang .data
 
 
 cf_pca <- function(SiteID,
@@ -79,7 +83,7 @@ cf_pca <- function(SiteID,
   suppressMessages(if(!file.exists(".here")) here::set_here(directory))
 
 
-  if(variables == "all_threshold"){variables = c("heat_index_ec", "heat_index_dan", "temp_over_95_pctl", "temp_over_99_pctl", "temp_over_95_pctl_length", "temp_under_freeze", "temp_under_freeze_length", "temp_under_5_pctl", "no_precip" , "no_precip_length", "precip_95_pctl", "precip_99_pctl", "precip_moderate", "precip_heavy", "freeze_thaw", "gdd", "gdd_count", "not_gdd_count", "frost", "grow_len")}
+  if(variables == "all_threshold"){variables = c("precip_daily", "tmin", "tmax", "tavg", "rhmin", "rhmax", "heat_index_ec", "heat_index_dan", "temp_over_95_pctl", "temp_over_99_pctl", "temp_over_95_pctl_length", "temp_under_freeze", "temp_under_freeze_length", "temp_under_5_pctl", "no_precip" , "no_precip_length", "precip_95_pctl", "precip_99_pctl", "precip_moderate", "precip_heavy", "freeze_thaw", "gdd", "gdd_count", "not_gdd_count", "frost", "grow_len")}
 
 
   # ---------
@@ -89,7 +93,7 @@ cf_pca <- function(SiteID,
 
   future_all <- data
 
-  named_df <- data.frame(tibble::column_to_rownames(pca_summary, var = "gcm")) %>%
+  named_df <- data.frame(tibble::column_to_rownames(data, var = "gcm")) %>%
   # give rownames to variables for PCA
     #dplyr::select(tidyselect::where(~length(unique(.)) > 1)) %>%
   # remove columns that have all same values (cannot scale data if not)
@@ -100,7 +104,7 @@ cf_pca <- function(SiteID,
   # ---------
 
   cf_pca <- named_df %>%
-    tidyr::drop_na() %>%
+    dplyr::select_if(~ !any(is.na(.))) %>%
    # base::scale() %>%
     stats::prcomp(center = TRUE, scale. = TRUE)
 
