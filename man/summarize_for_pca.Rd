@@ -2,9 +2,15 @@
 % Please edit documentation in R/summarize_for_pca.R
 \name{summarize_for_pca}
 \alias{summarize_for_pca}
-\title{Summarize threshold values to allocate climate futures by PCA}
+\title{Summarize threshold values to allocate climate futures by PCA*}
 \usage{
-summarize_for_pca(SiteID, data = NULL, year, directory = tempdir())
+summarize_for_pca(
+  SiteID,
+  data = NULL,
+  past_years = c(1950, 2000),
+  future_year = 2040,
+  directory = tempdir()
+)
 }
 \arguments{
 \item{SiteID}{chosen name to use in file names, attributes, and
@@ -14,7 +20,11 @@ directories. (character)}
 Follow vignette for example dataset creation. This should be the output of
 the \code{calc_thresholds} function (data frame)}
 
-\item{year}{year to center changes from historical data around (numeric)}
+\item{past_years}{years to base past data off of. Cannot be any earlier than 1950.
+Must be written as c(past_start, past_end). Defaults to 1950:2000 (numeric)}
+
+\item{future_year}{year to center changes from historical data around. Defaults to
+2040 (numeric)}
 
 \item{directory}{where to save files to. Per CRAN guidelines, this
 defaults to a temporary directory and files created will be lost after
@@ -26,7 +36,11 @@ This csv can be directly used to calculate model selection by pca using the \cod
 function.
 }
 \description{
-Summarize threshold values to allocate climate futures by PCA
+Takes data from \code{calc_thresholds} and summarizes the thresholds to be used to find
+most extreme climate futures from principal components analysis (PCA)
+}
+\details{
+*For advanced users only.
 }
 \examples{
 
@@ -68,7 +82,7 @@ gdd =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
 gdd_count = rnorm(100),
 not_gdd_count = rnorm(100),
 frost = sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-grow_len = rnorm(100),
+grow_length = rnorm(100),
 units = rep("imperial", each = 100)
 )
 

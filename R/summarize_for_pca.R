@@ -1,12 +1,19 @@
-
-#' Summarize threshold values to allocate climate futures by PCA
+#' Summarize threshold values to allocate climate futures by PCA*
+#'
+#' Takes data from `calc_thresholds` and summarizes the thresholds to be used to find
+#' most extreme climate futures from principal components analysis (PCA)
+#'
+#' *For advanced users only.
 #'
 #' @param SiteID chosen name to use in file names, attributes, and
 #'  directories. (character)
 #' @param data Default dataset to use for the .csv files this function will create.
 #' Follow vignette for example dataset creation. This should be the output of
 #' the `calc_thresholds` function (data frame)
-#' @param year year to center changes from historical data around (numeric)
+#' @param past_years years to base past data off of. Cannot be any earlier than 1950.
+#' Must be written as c(past_start, past_end). Defaults to 1950:2000 (numeric)
+#' @param future_year year to center changes from historical data around. Defaults to
+#' 2040 (numeric)
 #' @param directory where to save files to. Per CRAN guidelines, this
 #' defaults to a temporary directory and files created will be lost after
 #' R session ends. Specify a path to retain files.
@@ -58,7 +65,7 @@
 #' gdd_count = rnorm(100),
 #' not_gdd_count = rnorm(100),
 #' frost = sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' grow_len = rnorm(100),
+#' grow_length = rnorm(100),
 #' units = rep("imperial", each = 100)
 #' )
 #'
@@ -70,7 +77,8 @@
 
 summarize_for_pca <- function(SiteID,
                         data = NULL,
-                        year,
+                        past_years = c(1950, 2000),
+                        future_year = 2040,
                         directory = tempdir()){
 
   # ---------
@@ -80,47 +88,170 @@ summarize_for_pca <- function(SiteID,
   rh_exists <-  any(names(data) == "rhmin")
   suppressMessages(if(!file.exists(".here")) here::set_here(directory))
 
-  start_year <- year - 15
-  end_year <- year + 15
+  future_start <- future_year - 15
+  future_end <- future_year + 15
+
+  past_start <- past_years[1]
+  past_end <- past_years[2]
+
 
   future_all <- data %>%
-    dplyr::filter(.data$yr %in% c(start_year:end_year)) %>%
+    dplyr::filter(.data$yr %in% c(future_start:future_end)) %>%
     dplyr::mutate(time = "Future")
 
   past_all <- data %>%
-    dplyr::filter(.data$yr < 2000) %>%
+    dplyr::filter(.data$yr %in% c(past_start:past_end)) %>%
     dplyr::mutate(time = "Historical")
 
 
   # ---------
-  # create means for past and future
+  # Find observations for past and future
   # ---------
 
-  past_mean <- past_all %>%
+  past_change <- past_all %>%
     dplyr::group_by(.data$gcm) %>%
+    dplyr::mutate(num_years = past_end - past_start) %>%
     dplyr::summarize(precip_mean_p = mean(.data$precip),
                      # data source needs to be specified using rlang::.data
                      # error `no visible binding for global variable x` will be thrown
                      tmax_mean_p = mean(.data$tmax),
                      tmin_mean_p = mean(.data$tmin),
-                     tavg_mean_p = (.data$tmax_mean_p + .data$tmin_mean_p) / 2)
+                     tavg_mean_p = (.data$tmax_mean_p + .data$tmin_mean_p) / 2,
+                     rhmin_mean_p = mean(.data$rhmin),
+                     rhmax_mean_p = mean(.data$rhmax),
+                     heat_index_p = ifelse(rh_exists == TRUE,
+                                           mean(.data$heat_index, na.rm = TRUE),
+                                           NA_integer_),
+                     heat_index_ec_p = ifelse(rh_exists == TRUE,
+                                            sum(.data$heat_index_ec,
+                                                na.rm = TRUE) / unique(.data$num_years),
+                                                NA_integer_),
+                     heat_index_dan_p = ifelse(rh_exists == TRUE,
+                                               sum(.data$heat_index_dan,
+                                                   na.rm = TRUE) / unique(.data$num_years),
+                                                   NA_integer_),
+                     temp_over_95_pctl_p = sum(.data$temp_over_95_pctl,
+                                             na.rm = TRUE) / unique(.data$num_years),
+                     temp_over_99_pctl_p = sum(.data$temp_over_99_pctl,
+                                             na.rm = TRUE) / unique(.data$num_years),
+                     temp_over_95_pctl_length_p = max(.data$temp_over_95_pctl_length,
+                                                    na.rm = TRUE),
+                     temp_under_freeze_p = sum(.data$temp_under_freeze,
+                                             na.rm = TRUE) / unique(.data$num_years),
+                     temp_under_freeze_length_p = max(.data$temp_under_freeze_length,
+                                                    na.rm = TRUE),
+                     temp_under_5_pctl_p = sum(.data$temp_under_5_pctl,
+                                             na.rm = TRUE) / unique(.data$num_years),
+                     no_precip_p = sum(.data$no_precip,
+                                       na.rm = TRUE) / unique(.data$num_years),
+                     no_precip_length_p = max(.data$no_precip_length, na.rm = TRUE),
+                     precip_95_pctl_p = sum(.data$precip_95_pctl,
+                                          na.rm = TRUE) / unique(.data$num_years),
+                     precip_99_pctl_p = sum(.data$precip_99_pctl,
+                                          na.rm = TRUE) / unique(.data$num_years),
+                     precip_moderate_p = sum(.data$precip_moderate,
+                                           na.rm = TRUE) / unique(.data$num_years),
+                     precip_heavy_p = sum(.data$precip_heavy,
+                                        na.rm = TRUE) / unique(.data$num_years),
+                     freeze_thaw_p = sum(.data$freeze_thaw,
+                                       na.rm = TRUE) / unique(.data$num_years),
+                     gdd_p = sum(.data$gdd, na.rm = TRUE) / unique(.data$num_years),
+                     frost_p = sum(.data$frost, na.rm = TRUE) / unique(.data$num_years),
+                     grow_length_p = mean(.data$grow_length, na.rm = TRUE),
+                     units = unique(units))
 
-  future_mean <- future_all %>%
+  future_change <- future_all %>%
     dplyr::group_by(.data$gcm) %>%
     dplyr::summarize(precip_mean_f = mean(.data$precip),
                      tmax_mean_f = mean(.data$tmax),
                      tmin_mean_f = mean(.data$tmin),
-                     tavg_mean_f = (.data$tmax_mean_f + .data$tmin_mean_f) / 2)
-  # ---------
-  # make change variables
-  # ---------
+                     tavg_mean_f = (.data$tmax_mean_f + .data$tmin_mean_f) / 2,
+                     rhmin_mean_f = mean(.data$rhmin),
+                     rhmax_mean_f = mean(.data$rhmax),
+                     heat_index_f = ifelse(rh_exists == TRUE,
+                                           mean(.data$heat_index, na.rm = TRUE),
+                                           NA_integer_),
+                     heat_index_ec_f = ifelse(rh_exists == TRUE,
+                                              sum(.data$heat_index_ec,
+                                                  na.rm = TRUE) / 30,
+                                              NA_integer_),
+                     heat_index_dan_f = ifelse(rh_exists == TRUE,
+                                               sum(.data$heat_index_dan,
+                                                   na.rm = TRUE) / 30,
+                                               NA_integer_),
+                     temp_over_95_pctl_f = sum(.data$temp_over_95_pctl,
+                                               na.rm = TRUE) / 30,
+                     temp_over_99_pctl_f = sum(.data$temp_over_99_pctl,
+                                               na.rm = TRUE) / 30,
+                     temp_over_95_pctl_length_f = max(.data$temp_over_95_pctl_length,
+                                                      na.rm = TRUE),
+                     temp_under_freeze_f = sum(.data$temp_under_freeze,
+                                               na.rm = TRUE) / 30,
+                     temp_under_freeze_length_f = max(.data$temp_under_freeze_length,
+                                                      na.rm = TRUE),
+                     temp_under_5_pctl_f = sum(.data$temp_under_5_pctl,
+                                               na.rm = TRUE) / 30,
+                     no_precip_f = sum(.data$no_precip,
+                                       na.rm = TRUE) / 30,
+                     no_precip_length_f = max(.data$no_precip_length, na.rm = TRUE),
+                     precip_95_pctl_f = sum(.data$precip_95_pctl,
+                                            na.rm = TRUE) / 30,
+                     precip_99_pctl_f = sum(.data$precip_99_pctl,
+                                            na.rm = TRUE) / 30,
+                     precip_moderate_f = sum(.data$precip_moderate,
+                                             na.rm = TRUE) / 30,
+                     precip_heavy_f = sum(.data$precip_heavy,
+                                          na.rm = TRUE) / 30,
+                     freeze_thaw_f = sum(.data$freeze_thaw,
+                                         na.rm = TRUE) / 30,
+                     gdd_f = sum(.data$gdd, na.rm = TRUE) / 30,
+                     frost_f = sum(.data$frost, na.rm = TRUE) / 30,
+                     grow_length_f = mean(.data$grow_length, na.rm = TRUE),
+                     units = unique(units))
+  # ------------
+  # CALCULATE THREHOLDS
+  # ------------
 
-  change <- future_mean %>%
+  change <- future_change %>%
     dplyr::summarize(gcm = unique(.data$gcm),
-                     precip_change = .data$precip_mean_f - past_mean$precip_mean_p,
-                     tmax_change = .data$tmax_mean_f - past_mean$tmax_mean_p,
-                     tmin_change = .data$tmin_mean_f - past_mean$tmin_mean_p,
-                     tavg_change = .data$tavg_mean_f - past_mean$tavg_mean_p)
+                     units = unique(units),
+                     precip_change = .data$precip_mean_f - past_change$precip_mean_p,
+                     tmax_change = .data$tmax_mean_f - past_change$tmax_mean_p,
+                     tmin_change = .data$tmin_mean_f - past_change$tmin_mean_p,
+                     tavg_change = .data$tavg_mean_f - past_change$tavg_mean_p,
+                     rhmin_change = .data$rhmin_mean_f  - past_change$rhmin_mean_p,
+                     rhmax_change = .data$rhmax_mean_f  - past_change$rhmax_mean_p,
+                     heat_index_change = .data$heat_index_f - past_change$heat_index_p,
+                     heat_index_ec_change = .data$heat_index_ec_f -
+                       past_change$heat_index_ec_p,
+                     heat_index_dan_change = .data$heat_index_dan_f -
+                       past_change$heat_index_dan_p,
+                     temp_over_95_pctl_change = .data$temp_over_95_pctl_f -
+                       past_change$ temp_over_95_pctl_p,
+                     temp_over_99_pctl_change = .data$temp_over_99_pctl_f -
+                       past_change$ temp_over_99_pctl_p,
+                     temp_over_95_pctl_length_change = .data$temp_over_95_pctl_length_f -
+                       past_change$ temp_over_95_pctl_length_p,
+                     temp_under_freeze_change = .data$temp_under_freeze_f -
+                       past_change$temp_under_freeze_p,
+                     temp_under_freeze_length_change = .data$temp_under_freeze_length_f -
+                       past_change$temp_under_freeze_length_p,
+                     temp_under_5_pctl_change = .data$temp_under_5_pctl_f -
+                       past_change$temp_under_5_pctl_p,
+                     no_precip_change = .data$no_precip_f - past_change$no_precip_p,
+                     no_precip_length_change = .data$no_precip_length_f -
+                       past_change$no_precip_length_p,
+                     precip_95_pctl_change = .data$precip_95_pctl_f -
+                       past_change$precip_95_pctl_p,
+                     precip_99_pctl_change = .data$precip_99_pctl_f -
+                       past_change$precip_99_pctl_p,
+                     precip_moderate_change = .data$precip_moderate_f -
+                       past_change$precip_moderate_p,
+                     precip_heavy_change = .data$precip_heavy_f - past_change$precip_heavy_p,
+                     freeze_thaw_change = .data$freeze_thaw_f - past_change$freeze_thaw_p,
+                     gdd_change = .data$gdd_f - past_change$gdd_p,
+                     frost_change = .data$frost_f - past_change$frost_p,
+                     grow_length_change = .data$grow_length_f - past_change$grow_length_p)
 
   # ---------
   # set quadrant variables
@@ -160,56 +291,9 @@ summarize_for_pca <- function(SiteID,
   cf_gcm_only <- quadrant_df %>%
     dplyr::select(.data$gcm, .data$cf)
 
-  # ------------
-  # attach cfs to past data
-  # ------------
-
-  past_all <- past_all %>%
+  threshold_summary <- change %>%
     dplyr::full_join(cf_gcm_only, by = "gcm")
 
-  # ------------
-  # CALCULATE THREHOLDS
-  # ------------
-
-  suppressMessages(threshold_summary <- future_all %>%
-    dplyr::full_join(cf_gcm_only, by = "gcm") %>%
-    dplyr::full_join(past_all) %>%
-    dplyr::group_by(.data$gcm) %>%
-    dplyr::summarize(precip_daily =mean(.data$precip),
-      #mean is mean of all cfs over month/season/year
-      tmin = mean(.data$tmin, na.rm = TRUE),
-      tmax = mean(.data$tmax, na.rm = TRUE),
-      tavg = mean(.data$tavg, na.rm = TRUE),
-      rhmin = ifelse(rh_exists == TRUE, mean(.data$rhmin, na.rm = TRUE), NA_integer_),
-      rhmax = ifelse(rh_exists == TRUE, mean(.data$rhmax, na.rm = TRUE), NA_integer_),
-      heat_index = ifelse(rh_exists == TRUE, mean(.data$heat_index, na.rm = TRUE),
-                          NA_integer_),
-      heat_index_ec = ifelse(rh_exists == TRUE, sum(.data$heat_index_ec, na.rm = TRUE) / 30,
-                             NA_integer_),
-      heat_index_dan = ifelse(rh_exists == TRUE, sum(.data$heat_index_dan, na.rm = TRUE) / 30,
-                              NA_integer_),
-      temp_over_95_pctl = sum(.data$temp_over_95_pctl, na.rm = TRUE) / 30,
-      temp_over_99_pctl = sum(.data$temp_over_99_pctl, na.rm = TRUE) / 30,
-      temp_over_95_pctl_length = max(.data$temp_over_95_pctl_length, na.rm = TRUE),
-      temp_under_freeze = sum(.data$temp_under_freeze, na.rm = TRUE) / 30,
-      temp_under_freeze_length = max(.data$temp_under_freeze_length, na.rm = TRUE),
-      temp_under_5_pctl = sum(.data$temp_under_5_pctl, na.rm = TRUE) / 30,
-      no_precip = sum(.data$no_precip, na.rm = TRUE) / 30,
-      no_precip_length = max(.data$no_precip_length, na.rm = TRUE),
-      precip_95_pctl = sum(.data$precip_95_pctl, na.rm = TRUE) / 30,
-      precip_99_pctl = sum(.data$precip_99_pctl,na.rm = TRUE) / 30,
-      precip_moderate = sum(.data$precip_moderate, na.rm = TRUE) / 30,
-      precip_heavy = sum(.data$precip_heavy, na.rm = TRUE) / 30,
-      freeze_thaw = sum(.data$freeze_thaw, na.rm = TRUE) / 30,
-      gdd = sum(.data$gdd, na.rm = TRUE) / 30,
-      gdd_count = max(.data$gdd_count, na.rm = TRUE),
-      not_gdd_count = max(.data$not_gdd_count, na.rm = TRUE),
-      frost = sum(.data$frost, na.rm = TRUE) / 30,
-      grow_len = mean(.data$grow_len, na.rm = TRUE),
-      units = unique(units),
-      cf = unique(cf),
-      .groups = "keep") %>%
-    dplyr::ungroup())
 
   if(directory == "tempdir()"){print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument.")}
 

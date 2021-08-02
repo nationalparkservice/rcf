@@ -1,17 +1,23 @@
-
-
-#' Title
+#' Calculate climate futures using PCA*
 #'
-#' @param SiteID chosen name to use in file names, attributes, and
-#'  directories. (character)
+#' Designates climate futures of "Warm Wet", "Warm Dry", "Hot Wet", "Hot Dry" and "Central"
+#' and calculates mean values for each GCM. Will additionally calculate which models
+#' represent the largest spread in data of variables entered using PCA. Calculates
+#' summary of threshold values based off of selected summarization parameter and PCA.
+#'
+#' *For advanced users only.
+#'
+#' @param SiteID chosen name to use in file names, attributes, and directories. Default
+#' name is "unnamed_site" (character)
 #' @param data Default dataset to use for the .csv files this function will create.
 #' Follow vignette for example dataset creation. (data frame)
-#' @param variables Variables you want the PCA to be based off of. Must match column names in
-#' `data` parameter exactly. If running directly from `summarize_for_pca` and would like
-#' to use all threshold values to select models, write "all_threshold"
+#' @param variables Variables you want the PCA to be based off of. Must match column names
+#'  from dataframe in `data` parameter exactly. If running directly from
+#'  `summarize_for_pca` and would like to use all threshold values to select models,
+#'  write "all_threshold" (character)
 #' @param num_cf Number of climate futures to select. Option of 2 or 4. Two models will be the
-#' maximum and minimum values of principal component 1 (PC1), and 4 will be the maximum and minimun
-#' values of principal component 2 (PC2)
+#' maximum and minimum values of principal component 1 (PC1), and 4 will be the maximum
+#' and minimun values of principal component 2 (PC2)
 #' @param directory where to save files to. Per CRAN guidelines, this
 #' defaults to a temporary directory and files created will be lost after
 #' R session ends. Specify a path to retain files.
@@ -62,10 +68,10 @@
 #' gdd_count = rnorm(100),
 #' not_gdd_count = rnorm(100),
 #' frost = sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' grow_len = rnorm(100)
+#' grow_length = rnorm(100)
 #' )
 #'
-#' cf_pca("SCBL", data = data, year = 2040, variables = c("tmin", "tmax", "rhmin"),
+#' cf_pca("SCBL", data = data, variables = c("tmin", "tmax", "rhmin"),
 #' num_cf = 2)
 #' }
 #'
@@ -73,9 +79,9 @@
 #' @importFrom rlang .data
 
 
-cf_pca <- function(SiteID,
+cf_pca <- function(SiteID = "unnamed_site",
                    data = NULL,
-                   variables = NULL,
+                   variables = "all_threshold",
                    num_cf = 4,
                    directory = tempdir()){
 
@@ -83,7 +89,7 @@ cf_pca <- function(SiteID,
   suppressMessages(if(!file.exists(".here")) here::set_here(directory))
 
 
-  if(variables == "all_threshold"){variables = c("precip_daily", "tmin", "tmax", "tavg", "rhmin", "rhmax", "heat_index_ec", "heat_index_dan", "temp_over_95_pctl", "temp_over_99_pctl", "temp_over_95_pctl_length", "temp_under_freeze", "temp_under_freeze_length", "temp_under_5_pctl", "no_precip" , "no_precip_length", "precip_95_pctl", "precip_99_pctl", "precip_moderate", "precip_heavy", "freeze_thaw", "gdd", "gdd_count", "not_gdd_count", "frost", "grow_len")}
+  if(variables == "all_threshold"){variables = c("precip_change", "tmin_change", "tmax_change", "tavg_change", "rhmin_change", "rhmax_change", "heat_index_ec_change", "heat_index_dan_change", "temp_over_95_pctl_change", "temp_over_99_pctl_change", "temp_over_95_pctl_length_change", "temp_under_freeze_change", "temp_under_freeze_length_change", "temp_under_5_pctl_change", "no_precip_change", "no_precip_length_change", "precip_95_pctl_change", "precip_99_pctl_change", "precip_moderate_change", "precip_heavy_change", "freeze_thaw_change", "gdd_change", "frost_change", "grow_length_change")}
 
 
   # ---------
@@ -95,8 +101,6 @@ cf_pca <- function(SiteID,
 
   named_df <- data.frame(tibble::column_to_rownames(data, var = "gcm")) %>%
   # give rownames to variables for PCA
-    #dplyr::select(tidyselect::where(~length(unique(.)) > 1)) %>%
-  # remove columns that have all same values (cannot scale data if not)
     dplyr::select(paste(variables))
 
   # ---------
@@ -104,9 +108,24 @@ cf_pca <- function(SiteID,
   # ---------
 
   cf_pca <- named_df %>%
-    dplyr::select_if(~ !any(is.na(.))) %>%
+    dplyr::select_if(~ !any(is.na(.))) %>% #remove columns with NA values
    # base::scale() %>%
     stats::prcomp(center = TRUE, scale. = TRUE)
+
+  #print warning for removed columns
+
+  kept_columns <- data %>%
+    dplyr::select_if(~ !any(is.na(.)))
+
+  removed_columns <- data %>%
+    dplyr::select(!colnames(kept_columns))
+
+  columns_empty <- length(colnames(removed_columns) == 0)
+
+  if(columns_empty > 0L)print(paste("Removed", colnames(removed_columns), "due to NA values in column.", colnames(removed_columns), "was not used in PCA calculation."))
+
+
+
 
   # ------------
   # PCA SCATTERPLOT
@@ -118,6 +137,7 @@ cf_pca <- function(SiteID,
    pca_plot <- ggplot2::autoplot(cf_pca,
                     data = named_df,
                     loadings = TRUE,
+                    loadings.label = TRUE,
                     label = TRUE) +
     ggplot2::theme_classic() + #has the L shape around the graph
     ggplot2::theme(panel.grid = ggplot2::element_blank(), #removes grid lines

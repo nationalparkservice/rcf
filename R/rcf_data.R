@@ -1,5 +1,4 @@
-
-#' Download data
+#' Download MACA data from the cft package
 #'
 #' Downloads data from the cft package (https://www.earthdatascience.org/cft/)
 #' to your parent directory.
@@ -120,7 +119,7 @@ rcf_data <- function(SiteID,
   } # close metric if statement
 
   ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
-         readr::write_csv(df, here::here(SiteID,
+         readr::write_csv(df, here::here(directory,
                                   paste0(SiteID, ".csv"))))
 
   # Remove saved climate files

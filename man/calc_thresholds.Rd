@@ -4,7 +4,13 @@
 \alias{calc_thresholds}
 \title{Calculate threshold values for climate futures}
 \usage{
-calc_thresholds(SiteID, data = NULL, units = "imperial", directory = tempdir())
+calc_thresholds(
+  SiteID = "unnamed_site",
+  data = NULL,
+  units = "imperial",
+  past_years = c(1950, 2000),
+  directory = tempdir()
+)
 }
 \arguments{
 \item{SiteID}{chosen name to use in file names, attributes, and
@@ -16,6 +22,9 @@ prior to running function. Follow vignette for example data set creation (data f
 \item{units}{the unit type that will be used, defaults to "imperial"
 ("imperial" or "metric")}
 
+\item{past_years}{years to base past data off of. Cannot be any earlier than 1950.
+Must be written as c(past_start, past_end). Defaults to 1950:2000 (numeric)}
+
 \item{directory}{where to save files to. Per CRAN guidelines, this
 defaults to a temporary directory and files created will be lost after
 R session ends. Specify a path to retain files.}
@@ -25,7 +34,11 @@ one csv file:
 SiteID_thresholds.csv
 }
 \description{
-Calculate threshold values for climate futures
+Calculate values that exceed or go below a certain number as either "TRUE" of "FALSE."
+The summary of these threshold values is calculated in either \code{cf_quadrant} or
+\code{summarize_for_pca}functions. This is a very large dataframe and SHOULD NOT be edited
+outside of R. Editing this dataframe outside of R will result in a loss of data, and
+lead to inaccurate results.
 }
 \examples{
 \dontrun{

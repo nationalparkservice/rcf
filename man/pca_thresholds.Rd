@@ -2,28 +2,34 @@
 % Please edit documentation in R/pca_thresholds.R
 \name{pca_thresholds}
 \alias{pca_thresholds}
-\title{Summarize threshold values by PCA and month, season, or year}
+\title{Summarize threshold values by PCA and month, season, or year*}
 \usage{
 pca_thresholds(
   SiteID,
   pca_data = NULL,
   all_data = NULL,
-  year,
-  summarize_by = NULL,
+  past_years = c(1950, 2000),
+  future_year = 2040,
+  summarize_by = "year",
   directory = tempdir()
 )
 }
 \arguments{
-\item{SiteID}{chosen name to use in file names, attributes, and
-directories. (character)}
+\item{SiteID}{chosen name to use in file names, attributes, and directories. Default
+name is "unnamed_site" (character)}
 
 \item{pca_data}{The data that results from the \code{cf_pca} function (dataframe)}
 
 \item{all_data}{The data that results from the \code{calc_thresholds} function (dataframe)}
 
-\item{year}{year to center changes from historical data around (numeric)}
+\item{past_years}{years to base past data off of. Cannot be any earlier than 1950.
+Must be written as c(past_start, past_end). Defaults to 1950:2000 (numeric)}
 
-\item{summarize_by}{how to summarize the data, options are "month", "season", "year"}
+\item{future_year}{year to center changes from historical data around. Defaults to
+2040 (numeric)}
+
+\item{summarize_by}{how to summarize the data, options are "month", "season", "year"
+Defaults to year.}
 
 \item{directory}{where to save files to. Per CRAN guidelines, this
 defaults to a temporary directory and files created will be lost after
@@ -33,7 +39,11 @@ R session ends. Specify a path to retain files.}
 One (1) csv file that summarizes threshold values based on PCA and month/season/year
 }
 \description{
-Summarize threshold values by PCA and month, season, or year
+Summarizes threshold values calculated in the \code{calc_thresholds} function based on
+PCA.
+}
+\details{
+*For advanced users only.
 }
 \examples{
 #' @examples
@@ -74,15 +84,15 @@ gdd =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
 gdd_count = rnorm(100),
 not_gdd_count = rnorm(100),
 frost = sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-grow_len = rnorm(100)
+grow_length = rnorm(100)
 )
 
 pca_df <- data.frame(
 
 )
 
-pca_thresholds("SCBL", pca_data = pca_df, all_data = data, year = 2040,
-summarize_by = "month")
+pca_thresholds("SCBL", pca_data = pca_df, all_data = data, future_year = 2040,
+summarize_by = "month", past_years = c(1950, 2000))
 }
 
 }

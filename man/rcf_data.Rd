@@ -2,7 +2,7 @@
 % Please edit documentation in R/rcf_data.R
 \name{rcf_data}
 \alias{rcf_data}
-\title{Download data}
+\title{Download MACA data from the cft package}
 \usage{
 rcf_data(
   SiteID,

@@ -2,30 +2,31 @@
 % Please edit documentation in R/cf_pca.R
 \name{cf_pca}
 \alias{cf_pca}
-\title{Title}
+\title{Calculate climate futures using PCA*}
 \usage{
 cf_pca(
-  SiteID,
+  SiteID = "unnamed_site",
   data = NULL,
-  variables = NULL,
+  variables = "all_threshold",
   num_cf = 4,
   directory = tempdir()
 )
 }
 \arguments{
-\item{SiteID}{chosen name to use in file names, attributes, and
-directories. (character)}
+\item{SiteID}{chosen name to use in file names, attributes, and directories. Default
+name is "unnamed_site" (character)}
 
 \item{data}{Default dataset to use for the .csv files this function will create.
 Follow vignette for example dataset creation. (data frame)}
 
-\item{variables}{Variables you want the PCA to be based off of. Must match column names in
-\code{data} parameter exactly. If running directly from \code{summarize_for_pca} and would like
-to use all threshold values to select models, write "all_threshold"}
+\item{variables}{Variables you want the PCA to be based off of. Must match column names
+from dataframe in \code{data} parameter exactly. If running directly from
+\code{summarize_for_pca} and would like to use all threshold values to select models,
+write "all_threshold" (character)}
 
 \item{num_cf}{Number of climate futures to select. Option of 2 or 4. Two models will be the
-maximum and minimum values of principal component 1 (PC1), and 4 will be the maximum and minimun
-values of principal component 2 (PC2)}
+maximum and minimum values of principal component 1 (PC1), and 4 will be the maximum
+and minimun values of principal component 2 (PC2)}
 
 \item{directory}{where to save files to. Per CRAN guidelines, this
 defaults to a temporary directory and files created will be lost after
@@ -37,7 +38,13 @@ based upon PCA
 One (1) png file of the PCA scatterplot, with models labeled
 }
 \description{
-Title
+Designates climate futures of "Warm Wet", "Warm Dry", "Hot Wet", "Hot Dry" and "Central"
+and calculates mean values for each GCM. Will additionally calculate which models
+represent the largest spread in data of variables entered using PCA. Calculates
+summary of threshold values based off of selected summarization parameter and PCA.
+}
+\details{
+*For advanced users only.
 }
 \examples{
 
@@ -79,10 +86,11 @@ gdd =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
 gdd_count = rnorm(100),
 not_gdd_count = rnorm(100),
 frost = sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-grow_len = rnorm(100)
+grow_length = rnorm(100)
 )
 
-cf_pca("SCBL", data = data, year = 2040, variables = c("tmin", "tmax", "rhmin"),
+cf_pca("SCBL", data = data, variables = c("tmin", "tmax", "rhmin"),
 num_cf = 2)
 }
+
 }

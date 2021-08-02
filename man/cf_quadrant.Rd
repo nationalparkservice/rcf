@@ -5,9 +5,10 @@
 \title{Calculate climate futures based on their quadrant}
 \usage{
 cf_quadrant(
-  SiteID,
+  SiteID = "unnamed_site",
   data = NULL,
-  year,
+  future_year = 2040,
+  past_years = c(1950, 2000),
   method = "quadrant",
   summarize_by = "year",
   directory = tempdir()
@@ -20,15 +21,20 @@ directories. (character)}
 \item{data}{Default data set to use for .csv creation. Must be created
 prior to running function. Follow vignette for example data set creation (data frame)}
 
-\item{year}{year to center changes from historical data around (numeric)}
+\item{future_year}{year to center changes from historical data around. Defaults
+to 2040 (numeric)}
+
+\item{past_years}{years to base past data off of. Cannot be any earlier than 1950.
+Must be written as c(past_start, past_end). Defaults to 1950-2000 (numeric)}
 
 \item{method}{method for calculating resulting .csv. Options "quadrant" and "corner".
 "quadrant" will return a data frame in which all models are labeled
 in their respective quadrants "hot wet" "hot dry" "warm wet" "warm dry" and "central
 "corner" will do the same, but additionally return the model that represents
-the most extreme scenario in each quadrant}
+the most extreme scenario in each quadrant. Defaults to quadrant.}
 
-\item{summarize_by}{how to summarize the data, options are "month", "season", "year"}
+\item{summarize_by}{how to summarize the data, options are "month", "season", "year".
+Defaults to year.}
 
 \item{directory}{where to save files to. Per CRAN guidelines, this
 defaults to a temporary directory and files created will be lost after
@@ -37,14 +43,17 @@ R session ends. Specify a path to retain files.}
 \value{
 Two (2) .csv files:
 1.SiteID_future_means_x.csv - future means of all models calculated on central year
-2. SiteID_future_y_x.csv - Summary of threshold values calculated based on method (x) and
+2. SiteID_y_summary_x.csv - Summary of threshold values calculated based on method (x) and
 summary metric (y). Means are taken based on month/season/year and either all models in
 a quadrant for quadrant method, or most extreme model in each quadrant for corner method
 x: c = corner, q = quadrant
 y: month, season or year
 }
 \description{
-Calculate climate futures based on their quadrant
+Designates climate futures of "Warm Wet", "Warm Dry", "Hot Wet", "Hot Dry" and "Central"
+and calculates mean values for each GCM. Will additionally calculate the most extreme
+of each quadrant if calculation method is "corner". Calculates summary of threshold
+values based off of selected summarization parameter and calculation method.
 }
 \examples{
 \dontrun{
@@ -63,6 +72,7 @@ rhmin = rnorm(100),
 tavg = rnorm(100)
 )
 
-cf_quadrant("SCBL", data = df, year = 2040, method = "corner", summarize_by = "year")
+cf_quadrant("SCBL", data = df, future_year = 2040, past_years = c(1950, 2000),
+method = "corner", summarize_by = "year")
 }
 }
