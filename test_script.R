@@ -3,6 +3,10 @@
 my_directory <- "C:/Users/jnchr/Documents/test"
 raw_data <- readr::read_csv('C:/Users/jnchr/Documents/test/BAND.csv')
 
+small_data <- dplyr::sample_n(raw_data, 100000)
+
+raw_data <- small_data
+
 # ----------------
 # CALC THRESHOLDS
 # ----------------
@@ -41,7 +45,7 @@ pca_summary <- readr::read_csv('C:/Users/jnchr/Documents/test/BAND_test_pca_summ
 # CF PCA
 # -------------
 
-# data <- pca_summary
+data <- pca_summary
 
 cf_pca("BAND_test", data = pca_summary, variables = "all_threshold", directory = my_directory)
 

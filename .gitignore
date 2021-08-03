@@ -38,6 +38,4 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
-# Dataset needed to check code
-*.csv
 inst/doc

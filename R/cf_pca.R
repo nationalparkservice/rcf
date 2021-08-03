@@ -100,8 +100,12 @@ cf_pca <- function(SiteID = "unnamed_site",
   future_all <- data
 
   named_df <- data.frame(tibble::column_to_rownames(data, var = "gcm")) %>%
-  # give rownames to variables for PCA
-    dplyr::select(paste(variables))
+    dplyr::select(paste(variables)) %>%
+    # give rownames to variables for PCA
+    dplyr::select_if(~ !any(is.na(.))) %>%
+    # remove columns with NA values
+    dplyr::select_if(!colMeans(.) == unlist(.[1,]))
+    #remove columns where the mean is the same as the first value
 
   # ---------
   # Create PCA
@@ -109,7 +113,6 @@ cf_pca <- function(SiteID = "unnamed_site",
 
   cf_pca <- named_df %>%
     dplyr::select_if(~ !any(is.na(.))) %>% #remove columns with NA values
-   # base::scale() %>%
     stats::prcomp(center = TRUE, scale. = TRUE)
 
   #print warning for removed columns
