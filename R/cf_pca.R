@@ -125,7 +125,7 @@ cf_pca <- function(SiteID = "unnamed_site",
 
   columns_empty <- length(colnames(removed_columns) == 0)
 
-  if(columns_empty > 0L)print(paste("Removed", colnames(removed_columns), "due to NA values in column.", colnames(removed_columns), "was not used in PCA calculation."))
+  if(columns_empty > 0L)print(paste("Removed", colnames(removed_columns), "due to NA or all duplicate values in column.", colnames(removed_columns), "was not used in PCA calculation."))
 
 
 

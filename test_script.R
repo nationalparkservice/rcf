@@ -3,11 +3,11 @@
 my_directory <- "C:/Users/jnchr/Documents/test"
 raw_data <- readr::read_csv('C:/Users/jnchr/Documents/test/BAND.csv')
 
-small_data <- dplyr::sample_n(raw_data, 25000)
+# small_data <- dplyr::sample_n(raw_data, 10000)
 
-raw_data <- small_data
+ raw_data <- small_data
 
-readr::write_csv(small_data, "BAND_small.csv")
+# readr::write_csv(small_data, "C:/Users/jnchr/Documents/R/rcf/data/BAND_small.csv")
 
 # ----------------
 # CALC THRESHOLDS
