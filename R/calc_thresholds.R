@@ -244,7 +244,7 @@ calc_thresholds <- function(SiteID = "unnamed_site",
     #if directory isn't temporary, save to local file
     # if it is temporary, give warning and save to temp directory
 
-    if(directory == "tempdir()"){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
+    if(directory == tempdir()){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
 
 
     readr::write_csv(thresholds, here::here(directory,

@@ -59,7 +59,7 @@
 cf_quadrant <- function(SiteID = "unnamed_site",
                         data = NULL,
                         future_year = 2040,
-                        past_years = c(1950, 2000),
+                        past_years = c(1950, 2005),
                         method = "quadrant",
                         summarize_by = "year",
                         directory = tempdir()){
@@ -67,6 +67,35 @@ cf_quadrant <- function(SiteID = "unnamed_site",
 
   rh_exists <-  any(names(data) == "rhmin")
   suppressMessages(if(!file.exists(".here")) here::set_here(directory))
+
+  #stop create errors if people enter incorrect years
+  if (any(past_years < 1950 | past_years > 2005)) {
+    stop("The requested period for historic values is incorrect for this function. Years must be between 1950 and 2005")
+  }
+
+  if(length(past_years) > 2){
+    stop("You may have entered the range of years as (start_year:end_year). Did you mean to write (start_year, end_year)? Vector cannot be of length greater than 2.")
+  }
+
+  if(past_years[2] - past_years[1] < 30){
+    stop("Past year range must be at least 30 years.")
+  }
+
+  if(length(future_year) > 1){
+    stop("Future year should be a single year.")
+  }
+
+  if(any(future_year < 2040 | future_year > 2084)){
+    stop("Future year can only be between 2040 and 2084.")
+  }
+
+  if(method %in% c("quadrant", "corner") == FALSE){
+    stop("Method can only be quadrant or corner, did you misspell?")
+  }
+
+  if(summarize_by %in% c("month", "season", "year") == FALSE){
+    stop("summarize_by can only be month, season or year, did you misspell?")
+  }
 
   # ---------
   #subset data for future to be 30 years around focus year
@@ -598,7 +627,7 @@ if(mean_change_precip_dry == "TRUE"){
 #if directory isn't temp, save to local file
 # if it is temp, give warning and save to temp directory
 
-if(directory == "tempdir()"){print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument.")}
+if(directory == "tempdir()"){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
 
 
 
@@ -620,5 +649,7 @@ if(method == "corner"){
                                                                           "_season_summary_c.csv",
                                                                           "_year_summary_c.csv")))))
 }
+
+return(method_cf_gcm)
 
 }# close function

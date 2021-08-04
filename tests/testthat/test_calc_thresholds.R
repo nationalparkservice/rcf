@@ -3,7 +3,9 @@ data <- readr::read_csv(system.file("extdata","BAND_small.csv", package = "rcf")
 
 my_directory <- here::here()
 
+
 test_that("Function results in a dataframe", {
+  skip_on_cran()
   threshold_data <- calc_thresholds(
     SiteID = "BAND",
     data = data,
@@ -38,4 +40,19 @@ test_that("Past year range is at least 30 years",{
                     directory = my_directory),
     regexp = "Past year range must be at least 30 years."
   )
+})
+
+test_that("tempdir() gives warning", {
+  expect_warning(calc_thresholds(SiteID = "BAND",
+                                 data = data,
+                                 past_years = c(1950, 2000)),
+                 regexp = "Files have been saved to temporary directory")
+})
+
+test_that("csv size gives warning", {
+  expect_warning(calc_thresholds(SiteID = "BAND",
+                                 data = data,
+                                 past_years = c(1950, 2000),
+                                 directory = my_directory),
+                 regexp = "thresholds.csv generated successfully")
 })
