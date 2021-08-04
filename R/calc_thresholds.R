@@ -58,7 +58,7 @@ calc_thresholds <- function(SiteID = "unnamed_site",
     stop("The requested period for historic values is incorrect for this function. Years must be between 1950 and 2005")
   }
 
-  if(sum(lengths(past_years) > 2)){
+  if(length(past_years) > 2){
     stop("You may have entered the range of years as (start_year:end_year). Did you mean to write (start_year, end_year)? Vector cannot be of length greater than 2.")
   }
 
