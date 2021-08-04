@@ -27,5 +27,15 @@ test_that("Past year reference range is valid", {
                     data = data,
                     past_years = c(2020, 2030),
                     directory = my_directory),
-    regexpr = "The requested period for historic values is incorrect for this function.")
+    regexp = "The requested period for historic values is incorrect for this function.")
+})
+
+test_that("Past year range is at least 30 years",{
+  expect_error(
+    calc_thresholds(SiteID = "BAND",
+                    data = data,
+                    past_years = c(1950, 1960),
+                    directory = my_directory),
+    regexp = "Past year range must be at least 30 years."
+  )
 })

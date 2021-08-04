@@ -54,14 +54,19 @@ calc_thresholds <- function(SiteID = "unnamed_site",
                             directory = tempdir()){
 
   #stop create errors if people enter incorrect years
+  #past years can only be between 1950 and 2005
   if (any(past_years < 1950 | past_years > 2005)) {
     stop("The requested period for historic values is incorrect for this function. Years must be between 1950 and 2005")
   }
 
+  #past years must be only 2 distinct years
   if(length(past_years) > 2){
     stop("You may have entered the range of years as (start_year:end_year). Did you mean to write (start_year, end_year)? Vector cannot be of length greater than 2.")
   }
 
+  if(past_years[2] - past_years[1] < 30){
+    stop("Past year range must be at least 30 years.")
+  }
 
   rh_exists <-  any(names(data) == "rhmin")
   suppressMessages(if(!file.exists(".here")) here::set_here(directory))
