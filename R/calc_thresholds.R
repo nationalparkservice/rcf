@@ -53,6 +53,14 @@ calc_thresholds <- function(SiteID = "unnamed_site",
                             past_years = c(1950,2000),
                             directory = tempdir()){
 
+  #stop create errors if people enter incorrect years
+  if (any(past_years < 1950 | past_years > 2005)) {
+    stop("The requested period for historic values is incorrect for this function. Years must be between 1950 and 2005")
+  }
+
+  if(sum(lengths(past_years) > 2)){
+    stop("You may have entered the range of years as (start_year:end_year). Did you mean to write (start_year, end_year)? Vector cannot be of length greater than 2.")
+  }
 
 
   rh_exists <-  any(names(data) == "rhmin")
@@ -91,32 +99,17 @@ calc_thresholds <- function(SiteID = "unnamed_site",
 
   # # # # HEAT INDEX FUNCTION # # # #
 
-  if(units == "imperial"){
-    heat_index <- function(temp, RH){
-
-      Sted <- 0.5 * (temp + 61 + ((temp - 68) * 1.2) + (RH * 0.094))
-      Roth <- -42.379 + (2.04901523 * temp) + (10.14333127 * RH) + (-.22475541 * temp * RH) +
-        (-.00683783 * temp^2) + (-.05481717 * RH^2) + (.00122874 * temp^2 * RH) +
-        (.00085282 * temp * RH^2) + (-.00000199 * temp^2 * RH^2)
-      adj1 <- ((13 - RH) / 4) * sqrt((17 - abs(temp - 95)) / 17)
-      adj2 <- ((RH - 85) / 10) * ((87 - temp) / 5)
-      heat_index<-ifelse(temp < 80, Sted,
-                         ifelse(RH < 13 & temp > 80 & temp < 112, Roth-adj1,
-                                ifelse(RH > 85 & temp > 80 & temp < 87, Roth+adj2, Roth)))
-    heat_index
-  } #creates errors but doesn't matter becuase not used when not applicable
-  }
-
-    if(units == "metric"){
-
-
       heat_index <- function(temp, RH){
-        tempf = (temp - 32) * (5 / 9)
+
+        if(units == "imperial"){tempf = temp}
+
+        if(units == "metric"){tempf = (temp - 32) * (5 / 9)}
+
         Sted <- 0.5 * (tempf + 61 + ((tempf - 68) * 1.2) + (RH * 0.094))
         Roth <- -42.379 + (2.04901523 * tempf) + (10.14333127 * RH) + (-.22475541 * tempf * RH) +
           (-.00683783 * tempf^2) + (-.05481717 * RH^2) + (.00122874 * tempf^2 * RH) +
           (.00085282 * tempf * RH^2) + (-.00000199 * tempf^2 * RH^2)
-        adj1 <- ((13 - RH) / 4) * sqrt((17 - abs(tempf - 95)) / 17)
+        adj1 <- ifelse(RH < 13 & tempf > 80 & tempf < 112, (((13 - RH) / 4) * sqrt((17 - abs(tempf - 95)) / 17)), NA_real_)
         adj2 <- ((RH - 85) / 10) * ((87 - tempf) / 5)
         heat_index<-ifelse(tempf < 80, Sted,
                            ifelse(RH < 13 & tempf > 80 & tempf < 112, Roth-adj1,
@@ -125,10 +118,8 @@ calc_thresholds <- function(SiteID = "unnamed_site",
 
       }
 
-      }
 
-
-  if(units == "metric")print("Heat index must be calculated using Fahrenheit. All values related to heat index are calculated in fahrenheit.")
+  if(units == "metric")warning("Heat index calculated successfully, but must be calculated using Fahrenheit. All values related to heat index are in imperial units, not metric.")
   # # # # END HEAT INDEX FUNCTION # # # #
 
 
@@ -153,128 +144,59 @@ calc_thresholds <- function(SiteID = "unnamed_site",
 
   )# close suppressMessages
 
-  # --------------------------
-  # # # # IMPERIAL # # # #
-  # --------------------------
-
-  if(units == "imperial"){
-
-    thresholds <- thresholds1 %>%
-      dplyr::mutate(heat_index = if(rh_exists == TRUE) heat_index(.data$tmax,
-                                                                  .data$rhmin) else
-                                                                    (NA_integer_),
-                    # returns a number
-                    heat_index_ec = if(rh_exists == TRUE)
-                      .data$heat_index > 89 & .data$heat_index < 103 else
-                      (NA_integer_),
-                    # returns TRUE or FALSE
-                    heat_index_dan = if(rh_exists == TRUE)
-                      .data$heat_index > 102 & .data$heat_index < 124
-                    else(NA_integer_),
-                    # returns TRUE or FALSE
-                    temp_over_95_pctl = .data$tmax > .data$temp_95_pctl_p,
-                    # returns TRUE or FALSE - based off of historic value
-                    temp_over_99_pctl = .data$tmax > .data$temp_99_pctl_p,
-                    # returns TRUE or FALSE - based off of historic value
-                    temp_over_95_pctl_length = (.data$temp_over_95_pctl)*unlist(lapply(
-                      rle(.data$temp_over_95_pctl)$lengths, seq_len)),
-                    temp_under_freeze = .data$tmin < 32,
-                    # returns TRUE or FALSE
-                    temp_under_freeze_length = (.data$temp_under_freeze)*unlist(lapply(
-                      rle(.data$temp_under_freeze)$lengths, seq_len)),
-                    temp_under_5_pctl = .data$tmin < .data$temp_5_pctl_p,
-                    # returns temperature of the 5th quantile
-                    no_precip = .data$precip < 0.04,
-                    # returns TRUE or FALSE, precip greater than 0.04 inches
-                    no_precip_length = (.data$no_precip)*unlist(lapply(rle(
-                      .data$no_precip)$lengths, seq_len)),
-                    precip_95_pctl = .data$precip > .data$precip_95_pctl_p,
-                    # returns TRUE or FALSE
-                    precip_99_pctl = .data$precip > .data$precip_99_pctl_p,
-                    # returns TRUE or FALSE
-                    precip_moderate = .data$precip > 1,
-                    # returns TRUE or FALSE
-                    precip_heavy = .data$precip > 2,
-                    # returns TRUE or FALSE
-                    freeze_thaw = .data$tmin < 28 & .data$tmax > 34,
-                    # returns TRUE or FALSE
-                    gdd = .data$tavg > 41,
-                    # returns TRUE or FALSE
-                    gdd_count = .data$gdd * unlist(lapply(rle(.data$gdd)$lengths, seq_len)),
-                    # returns consecutive gdd
-                    not_gdd_count = (.data$gdd == FALSE) * unlist(lapply(rle(
-                      .data$gdd)$lengths, seq_len)),
-                    #%>%
-                    # returns consecutive days that are not gdd
-                    frost = .data$gdd == TRUE & .data$tmin < 32) %>%
-      dplyr::select(!colnames(past_pctl))
-
-
-  } # close if statement for "imperial"
-
-
-
-  # ------------------------
-  # # # # METRIC # # # #
-  # ------------------------
-
-
-  if(units == "metric"){
-
-    thresholds <- thresholds1 %>%
-      dplyr::mutate(heat_index = ifelse(rh_exists == TRUE,
-                                        heat_index(.data$tmax, .data$rhmin), NA_integer_),
-                    # returns a number
-                    heat_index_ec = ifelse(rh_exists == TRUE,
-                                           .data$heat_index > 89 & .data$heat_index < 103,
-                                           NA_integer_),
-                    # returns TRUE or FALSE
-                    heat_index_dan = ifelse(rh_exists == TRUE,
-                                            .data$heat_index > 102 & .data$heat_index < 124,
-                                            NA_integer_),
-                    # returns TRUE or FALSE
-                    temp_over_95_pctl = .data$tmax > .data$temp_95_pctl_p,
-                    # returns TRUE or FALSE
-                    temp_over_99_pctl = .data$tmax > .data$temp_99_pctl_p,
-                    # returns TRUE or FALSE
-                    temp_over_95_pctl_length = (.data$temp_over_95_pctl)*unlist(lapply(
-                      rle(.data$temp_over_95_pctl)$lengths, seq_len)),
-                    temp_under_freeze = .data$tmin < 0,
-                    # returns TRUE or FALSE
-                    temp_under_freeze_length = (.data$temp_under_freeze)*unlist(lapply(
-                      rle(.data$temp_under_freeze)$lengths, seq_len)),
-                    temp_under_5_pctl = .data$tmin < .data$temp_5_pctl_p,
-                    # returns temperature of the 5th quantile
-                    no_precip = .data$precip < 1, # 0.04 in = 1 mm
-                    # returns TRUE or FALSE, precip greater than 1 mm
-                    no_precip_length = (.data$no_precip)*unlist(lapply(rle(
-                      .data$no_precip)$lengths, seq_len)),
-                    precip_95_pctl = .data$precip > .data$precip_95_pctl_p,
-                    # returns TRUE or FALSE
-                    precip_99_pctl = .data$precip > .data$precip_99_pctl_p,
-                    # returns TRUE or FALSE
-                    precip_moderate = .data$precip > 25, # 1 inch rain
-                    # returns TRUE or FALSE
-                    precip_heavy = .data$precip > 50, # 2 inch rani
-                    # returns TRUE or FALSE
-                    freeze_thaw = .data$tmin < -2.2 & .data$tmax > 1.1, #28f to 34f
-                    # returns TRUE or FALSE
-                    gdd = .data$tavg > 5, #41f
-                    # returns TRUE or FALSE
-                    gdd_count = .data$gdd * unlist(lapply(rle(.data$gdd)$lengths, seq_len)),
-                    # returns consecutive gdd
-                    not_gdd_count = (.data$gdd == FALSE) * unlist(lapply(rle(
-                      .data$gdd)$lengths, seq_len)),
-                    # returns consecutive days that are not gdd
-                    frost = .data$gdd == TRUE & .data$tmin < 0) %>%
-      dplyr::select(!colnames(past_pctl))
-
-
-  } # close if statement for "metric"
+    suppressWarnings(
+      thresholds <- thresholds1 %>%
+        dplyr::mutate(heat_index = if(rh_exists == TRUE) heat_index(.data$tmax,
+                                                                    .data$rhmin) else
+                                                                      (NA_integer_),
+                      # returns a number
+                      heat_index_ec = if(rh_exists == TRUE)
+                        .data$heat_index > 89 & .data$heat_index < 103 else
+                          (NA_integer_),
+                      # returns TRUE or FALSE
+                      heat_index_dan = if(rh_exists == TRUE)
+                        .data$heat_index > 102 & .data$heat_index < 124
+                      else(NA_integer_),
+                      # returns TRUE or FALSE
+                      temp_over_95_pctl = .data$tmax > .data$temp_95_pctl_p,
+                      # returns TRUE or FALSE - based off of historic value
+                      temp_over_99_pctl = .data$tmax > .data$temp_99_pctl_p,
+                      # returns TRUE or FALSE - based off of historic value
+                      temp_over_95_pctl_length = (.data$temp_over_95_pctl)*unlist(lapply(
+                        rle(.data$temp_over_95_pctl)$lengths, seq_len)),
+                      temp_under_freeze = .data$tmin < freeze_num,
+                      # returns TRUE or FALSE
+                      temp_under_freeze_length = (.data$temp_under_freeze)*unlist(lapply(
+                        rle(.data$temp_under_freeze)$lengths, seq_len)),
+                      temp_under_5_pctl = .data$tmin < .data$temp_5_pctl_p,
+                      # returns temperature of the 5th quantile
+                      no_precip = .data$precip < no_precip_num,
+                      # returns TRUE or FALSE, precip greater than 0.04 inches
+                      no_precip_length = (.data$no_precip)*unlist(lapply(rle(
+                        .data$no_precip)$lengths, seq_len)),
+                      precip_95_pctl = .data$precip > .data$precip_95_pctl_p,
+                      # returns TRUE or FALSE
+                      precip_99_pctl = .data$precip > .data$precip_99_pctl_p,
+                      # returns TRUE or FALSE
+                      precip_moderate = .data$precip > precip_moderate_num,
+                      # returns TRUE or FALSE
+                      precip_heavy = .data$precip > precip_heavy_num,
+                      # returns TRUE or FALSE
+                      freeze_thaw = .data$tmin < freeze_thaw_low & .data$tmax > freeze_thaw_high,
+                      # returns TRUE or FALSE
+                      gdd = .data$tavg > gdd_num,
+                      # returns TRUE or FALSE
+                      gdd_count = .data$gdd * unlist(lapply(rle(.data$gdd)$lengths, seq_len)),
+                      # returns consecutive gdd
+                      not_gdd_count = (.data$gdd == FALSE) * unlist(lapply(rle(
+                        .data$gdd)$lengths, seq_len)),
+                      # returns consecutive days that are not gdd
+                      frost = .data$gdd == TRUE & .data$tmin < freeze_num) %>%
+        dplyr::select(!colnames(past_pctl)))
 
   # print statement for lack of rh
 
-  if(rh_exists == FALSE) print("Cannot calculate heat index. Dataframe does not include relative humitity.")
+  if(rh_exists == FALSE) warning("Cannot calculate heat index. Dataframe does not include relative humitity.")
 
   # -------------------
   # GROWING SEASON LENGTH CALCULATION
@@ -317,16 +239,15 @@ calc_thresholds <- function(SiteID = "unnamed_site",
     #if directory isn't temporary, save to local file
     # if it is temporary, give warning and save to temp directory
 
-    if(directory == "tempdir()"){print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument.")}
+    if(directory == "tempdir()"){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
 
 
     readr::write_csv(thresholds, here::here(directory,
                                             paste(SiteID,
                                                   "thresholds.csv",
                                                   sep = "_")))
+    warning("thresholds.csv generated successfully. DO NOT edit this csv in excel. File is too large and data will be lost, causing errors in future calculations.")
 
-    print("Do not edit this csv in excel. File is too large and data will be lost.")
-
-
-
+    return(thresholds)
 }
+
