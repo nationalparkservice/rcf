@@ -81,12 +81,40 @@ summarize_for_pca <- function(SiteID,
                         future_year = 2040,
                         directory = tempdir()){
 
+  #create stops if data entered incorrectly
+
+  if (any(past_years < 1950 | past_years > 2005)) {
+    stop("The requested period for historic values is incorrect for this function. Years must be between 1950 and 2005")
+  }
+
+  if(length(past_years) > 2){
+    stop("You may have entered the range of years as (start_year:end_year). Did you mean to write (start_year, end_year)? Vector cannot be of length greater than 2.")
+  }
+
+  if(past_years[2] - past_years[1] < 30 & past_years[1] < past_years[2]){
+    stop("Past year range must be at least 30 years.")
+  }
+
+  if(past_years[1] > past_years[2]){
+    stop("Past years entered in incorrect order, should be c(start_year, end_year).")
+  }
+
+  if(length(future_year) > 1){
+    stop("Future year should be a single year.")
+  }
+
+  if(any(future_year < 2040 | future_year > 2084)){
+    stop("Future year can only be between 2040 and 2084.")
+  }
+
+
   # ---------
   #subset data for future to be 30 years around focus year
   # ---------
 
   rh_exists <-  any(names(data) == "rhmin")
   suppressMessages(if(!file.exists(".here")) here::set_here(directory))
+
 
   future_start <- future_year - 15
   future_end <- future_year + 15
@@ -295,7 +323,9 @@ summarize_for_pca <- function(SiteID,
     dplyr::full_join(cf_gcm_only, by = "gcm")
 
 
-  if(directory == "tempdir()"){print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument.")}
+  if(directory == "tempdir()"){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
+
+  return(threshold_summary)
 
 
 readr::write_csv(threshold_summary, here::here(directory,

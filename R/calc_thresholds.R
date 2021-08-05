@@ -64,8 +64,12 @@ calc_thresholds <- function(SiteID = "unnamed_site",
     stop("You may have entered the range of years as (start_year:end_year). Did you mean to write (start_year, end_year)? Vector cannot be of length greater than 2.")
   }
 
-  if(past_years[2] - past_years[1] < 30){
+  if(past_years[2] - past_years[1] < 30 & past_years[1] < past_years[2]){
     stop("Past year range must be at least 30 years.")
+  }
+
+  if(past_years[1] > past_years[2]){
+    stop("Past years entered in incorrect order, should be c(start_year, end_year).")
   }
 
   rh_exists <-  any(names(data) == "rhmin")
