@@ -1,5 +1,5 @@
-#' Calculate climate futures using PCA*
-#'
+#' Calculate climate futures using PCA
+#' *
 #' Designates climate futures of "Warm Wet", "Warm Dry", "Hot Wet", "Hot Dry" and "Central"
 #' and calculates mean values for each GCM. Will additionally calculate which models
 #' represent the largest spread in data of variables entered using PCA. Calculates
@@ -12,9 +12,9 @@
 #' @param data Default dataset to use for the .csv files this function will create.
 #' Follow vignette for example dataset creation. (data frame)
 #' @param variables Variables you want the PCA to be based off of. Must match column names
-#'  from dataframe in `data` parameter exactly. If running directly from
-#'  `summarize_for_pca` and would like to use all threshold values to select models,
-#'  write "all_threshold" (character)
+#' from dataframe in `data` parameter exactly. If running directly from
+#' `summarize_for_pca` and would like to use all threshold values to select models,
+#' write "all_threshold" (character)
 #' @param num_cf Number of climate futures to select. Option of 2 or 4. Two models will be the
 #' maximum and minimum values of principal component 1 (PC1), and 4 will be the maximum
 #' and minimun values of principal component 2 (PC2)
@@ -77,7 +77,10 @@
 #'
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
+#' @import ggfortify
+#' @importFrom utils globalVariables
 
+utils::globalVariables("where")
 
 cf_pca <- function(SiteID = "unnamed_site",
                    data = NULL,
@@ -85,40 +88,65 @@ cf_pca <- function(SiteID = "unnamed_site",
                    num_cf = 4,
                    directory = tempdir()){
 
+  all_threshold = c("precip_change", "tmax_change", "tmin_change",  "tavg_change", "rhmin_change", "rhmax_change", "heat_index_change", "heat_index_ec_change", "heat_index_dan_change", "temp_over_95_pctl_change", "temp_over_99_pctl_change", "temp_over_95_pctl_length_change", "temp_under_freeze_change", "temp_under_freeze_length_change", "temp_under_5_pctl_change", "no_precip_change", "no_precip_length_change", "precip_95_pctl_change", "precip_99_pctl_change", "precip_moderate_change", "precip_heavy_change", "freeze_thaw_change", "gdd_change", "frost_change", "grow_length_change")
+
+  function_variables = if(variables == "all_threshold") all_threshold else(variables)
+  #ifelse didn't work here
+  #create variables to be used for the function
+
+  # stop function with error messages
+
+  if(num_cf %in% c(2,4) == FALSE){
+    stop("num_cf can only be 2 or 4. Did you enter a different number?")
+  }
+
+variables_df <- data %>%
+  dplyr::select(where(is.numeric))
+
+#!sum(variables %in% variables_df) == length(variables)
+
+  if(!sum(function_variables %in% colnames(variables_df)) == length(function_variables)){
+    #number of matches for column names in variables argument does not match the number of
+    #variables entered, then a variable has been entered incorrectly
+    stop("Variable names entered are not the same as the column names of your dataframe. Please check for spelling or case sensitive errors. You also may have entered variables that contain non-numeric values.")
+  }
+
 
   suppressMessages(if(!file.exists(".here")) here::set_here(directory))
-
-
-  if(variables == "all_threshold"){variables = c("precip_change", "tmin_change", "tmax_change", "tavg_change", "rhmin_change", "rhmax_change", "heat_index_ec_change", "heat_index_dan_change", "temp_over_95_pctl_change", "temp_over_99_pctl_change", "temp_over_95_pctl_length_change", "temp_under_freeze_change", "temp_under_freeze_length_change", "temp_under_5_pctl_change", "no_precip_change", "no_precip_length_change", "precip_95_pctl_change", "precip_99_pctl_change", "precip_moderate_change", "precip_heavy_change", "freeze_thaw_change", "gdd_change", "frost_change", "grow_length_change")}
-
 
   # ---------
   # subset data from entered dataframe
   # ---------
 
-
   future_all <- data
 
-  named_df <- data.frame(tibble::column_to_rownames(data, var = "gcm")) %>%
-    dplyr::select(paste(variables)) %>%
+  named_df2 <- data.frame(tibble::column_to_rownames(data, var = "gcm")) %>%
+    dplyr::select(base::paste(function_variables))
     # give rownames to variables for PCA
-    dplyr::select_if(~ !any(is.na(.))) %>%
-    # remove columns with NA values
-    dplyr::select_if(!colMeans(.) == unlist(.[1,]))
+  named_df1 <- named_df2 %>%
+    dplyr::select_if(!is.na(base::colSums(named_df2)) == "TRUE")
+  # remove columns with NA values
+
+  # needs to be split into two statements because it's looking for the
+  # number of columns in the original dataset and throws an error
+
+  named_df <- named_df1 %>%
+    dplyr::select_if(!base::colMeans(named_df1, na.rm = TRUE) == base::unlist(named_df1[1,]))
     #remove columns where the mean is the same as the first value
 
   # ---------
   # Create PCA
   # ---------
 
-  cf_pca <- named_df %>%
-    dplyr::select_if(~ !any(is.na(.))) %>% #remove columns with NA values
+  cf_pca <- named_df %>% #remove columns with NA values
+    dplyr::select_if(~ !any(is.na(.data))) %>%
+    # remove columns with NA values
     stats::prcomp(center = TRUE, scale. = TRUE)
 
   #print warning for removed columns
 
   kept_columns <- data %>%
-    dplyr::select_if(~ !any(is.na(.)))
+    dplyr::select_if(~ !any(is.na(.data)))
 
   removed_columns <- data %>%
     dplyr::select(!colnames(kept_columns))
@@ -134,9 +162,6 @@ cf_pca <- function(SiteID = "unnamed_site",
   # PCA SCATTERPLOT
   # ------------
 
-  # AMR::ggplot_pca(cf_pca,
-  #                 labels = rownames(named_df),
-  #                 labels_textsize = 5) +
    pca_plot <- ggplot2::autoplot(cf_pca,
                     data = named_df,
                     loadings = TRUE,
@@ -153,7 +178,7 @@ cf_pca <- function(SiteID = "unnamed_site",
                                axis.text.y = ggplot2::element_text(size = 15), #changes y-axis text size
                                legend.position = "top")  #location of legend
 
-  if(directory == "tempdir()"){print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument.")}
+  if(directory == tempdir()){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
 
   ggplot2::ggsave(here::here(directory,
                              paste0(SiteID, "_pca.png")),
@@ -179,18 +204,21 @@ cf_pca <- function(SiteID = "unnamed_site",
                   `PC2 Max` = .data$pc2_max,
                   `PC2 Min` = .data$pc2_min) %>%
     tidyr::pivot_longer(.data$`PC1 Max`:.data$`PC2 Min`,
-                        names_to = "prcomp",
+                        names_to = "pca_type",
                         values_to = "gcm") %>%
     dplyr::filter(ifelse(num_cf == 2,
-                         .data$prcomp %in% c("PC1 Max", "PC1 Min"),
-                         .data$prcomp %in% c("PC1 Max", "PC1 Min", "PC2 Max", "PC2 Min")))
+                         .data$pca_type %in% c("PC1 Max", "PC1 Min"),
+                         .data$pca_type %in% c("PC1 Max", "PC1 Min", "PC2 Max", "PC2 Min")))
 
   pca_cf_gcm <- future_all %>%
     dplyr::full_join(pc_models, by = "gcm")
+
 
   readr::write_csv(pca_cf_gcm, here::here(directory,
                                           paste(SiteID,
                                                 "future_means_pca.csv",
                                                 sep = "_")))
+
+  return(pca_cf_gcm)
 
 }

@@ -47,7 +47,8 @@ test_that("Past year range is at least 30 years",{
 })
 
 test_that("Past years entered in correct order", {
-  expect_error(summarize_for_pca(SiteID = "BAND",
+  expect_error(
+    cf_quadrant(SiteID = "BAND",
                                  data = data,
                                  past_years = c(2000, 1950),
                                  directory = my_directory),

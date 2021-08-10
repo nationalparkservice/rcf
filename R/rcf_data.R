@@ -33,46 +33,23 @@ rcf_data <- function(SiteID,
 
   suppressMessages(if(!file.exists(".here")) here::set_here(directory))
 
-  ## Download data
-  #Variable and scenario names corresponding to MACA data directory structure
-  vars = c("pr", "tasmax", "tasmin","rhsmax","rhsmin")
-  scens = c("rcp45", "rcp85")
-
-  # gcms to be extracted
-  gcms = c('bcc-csm1-1','bcc-csm1-1-m','BNU-ESM','CanESM2','CCSM4','CNRM-CM5','CSIRO-Mk3-6-0',
-           'GFDL-ESM2G','GFDL-ESM2M','HadGEM2-CC365','HadGEM2-ES365',
-           'inmcm4','IPSL-CM5A-MR','IPSL-CM5A-LR','IPSL-CM5B-LR',
-           'MIROC5','MIROC-ESM','MIROC-ESM-CHEM','MRI-Cgcm3','NorESM1-M')
-
-  #Date ranges to be extracted
-  Future_StartYear = 2006   #2006-2099
-  Future_EndYear = 2099   #2006-2099
-  Hist_StartYear = 1950     #1950-2005
-  Hist_EndYear = 2005      #1950-2005
-
-  Remove_files = "Y" # "N"       #Removes all climate data files saved in directory
-
-  ############################## END INITIALS ##################################################
-
   # Now can only use spatial object (not park name)
   Site_coordinates <- data.frame(PARK=SiteID,lat=latitude,lon=longitude)
   sp::coordinates(Site_coordinates) <- ~lon+lat
   sp::proj4string(Site_coordinates) <- "+proj=longlat +datum=NAD83 +no_defs " #same proj4string used in NPS_boundary_centroids.shp
 
-
-  # # Load Data - from centroids
-  # nps_boundary_centroids <- st_read('C:/Users/achildress/OneDrive - DOI/Documents/GIS/nps_boundary_centroids/nps_boundary_centroids.shp')
-  # centroid <- filter(nps_boundary_centroids, UNIT_CODE == "BIBE")
-  # Sp_centroid <- as_Spatial(centroid) # Does not accept sf objects
-
   # download data
   file_refs <- cft::cftdata(aoi = Site_coordinates,
                        area_name = SiteID,
-                       years = c(Hist_StartYear, Future_EndYear),
-                       models = gcms,
+                       years = c(1950,2099),
+                       models = c('bcc-csm1-1','bcc-csm1-1-m','BNU-ESM','CanESM2','CCSM4',
+                                  'CNRM-CM5','CSIRO-Mk3-6-0','GFDL-ESM2G','GFDL-ESM2M',
+                                  'HadGEM2-CC365','HadGEM2-ES365', 'inmcm4','IPSL-CM5A-MR',
+                                  'IPSL-CM5A-LR','IPSL-CM5B-LR', 'MIROC5','MIROC-ESM',
+                                  'MIROC-ESM-CHEM','MRI-Cgcm3','NorESM1-M'),
                        local_dir = directory,
-                       parameters = vars,
-                       scenarios = scens,
+                       parameters = c("pr", "tasmax", "tasmin","rhsmax","rhsmin"),
+                       scenarios = c("rcp45", "rcp85"),
                        ncores = parallel::detectCores() / 2)
 
   df1 <- cft::cft_df(file_refs, ncores = parallel::detectCores() / 2)
@@ -118,13 +95,13 @@ rcf_data <- function(SiteID,
     #rename to follow previously written code
   } # close metric if statement
 
-  ifelse(directory == "tempdir()", print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument."),
-         readr::write_csv(df, here::here(directory,
-                                  paste0(SiteID, ".csv"))))
+  if(directory == "tempdir()"){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
 
-  # Remove saved climate files
-  if(Remove_files == "Y") {
+         readr::write_csv(df, here::here(directory,
+                                  paste0(SiteID, ".csv")))
+
+
     do.call(file.remove, list(list.files(paste(directory,SiteID,sep="/"), full.names = TRUE)))
-    print("Files removed")
-  } else {print("Files remain")}
+    print("Files from cft package removed. Raw data has been saved into a large csv. DO NOT edit this csv in excel, it will cause data loss and miscalculations or malfunctions the proceeding functions.")
+
 } #close function

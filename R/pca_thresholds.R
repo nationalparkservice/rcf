@@ -85,6 +85,37 @@ pca_thresholds <- function(SiteID,
                            summarize_by = "year",
                            directory = tempdir()){
 
+  # set code to stop or create warnings for mistakes
+
+  #stop create errors if people enter incorrect years
+  if (any(past_years < 1950 | past_years > 2005)) {
+    stop("The requested period for historic values is incorrect for this function. Years must be between 1950 and 2005")
+  }
+
+  if(length(past_years) > 2){
+    stop("You may have entered the range of years as (start_year:end_year). Did you mean to write (start_year, end_year)? Vector cannot be of length greater than 2.")
+  }
+
+  if(past_years[2] - past_years[1] < 30 & past_years[1] < past_years[2]){
+    stop("Past year range must be at least 30 years.")
+  }
+
+  if(past_years[1] > past_years[2]){
+    stop("Past years entered in incorrect order, should be c(start_year, end_year).")
+  }
+
+  if(length(future_year) > 1){
+    stop("Future year should be a single year.")
+  }
+
+  if(any(future_year < 2040 | future_year > 2084)){
+    stop("Future year can only be between 2040 and 2084.")
+  }
+
+  if(summarize_by %in% c("month", "season", "year") == FALSE){
+    stop("summarize_by can only be month, season or year, did you misspell?")
+  }
+
   # set initials
 
   rh_exists <-  any(names(all_data) == "rhmin")
@@ -103,7 +134,7 @@ pca_thresholds <- function(SiteID,
     dplyr::mutate(time = "Future")
 
   cf_gcm_only <- pca_data %>%
-    dplyr::select(.data$gcm, .data$prcomp, .data$cf)
+    dplyr::select(.data$gcm, .data$pca_type, .data$cf)
 
   past_all <- all_data %>%
     dplyr::filter(.data$yr %in% c(past_start:past_end)) %>%
@@ -129,11 +160,11 @@ pca_thresholds <- function(SiteID,
 
     suppressMessages(
       method_cf_gcm <- pca_data %>%
-      dplyr::select(.data$gcm, .data$cf, .data$prcomp) %>%
+      dplyr::select(.data$gcm, .data$cf, .data$pca_type) %>%
       dplyr::full_join(future_all, by = "gcm")  %>%
       dplyr::full_join(past_all) %>%
-      dplyr::group_by(.data$prcomp, .data$yr, .data$time) %>%
-      tidyr::drop_na(.data$prcomp) %>%
+      dplyr::group_by(.data$pca_type, .data$yr, .data$time) %>%
+      tidyr::drop_na(.data$pca_type) %>%
       dplyr::summarize(gcm = unique(.data$gcm),
         cf = unique(.data$cf),
         precip_yearly = mean(.data$precip, na.rm = TRUE) * 365,
@@ -182,13 +213,13 @@ pca_thresholds <- function(SiteID,
   # --------
 
   suppressMessages(pca_cf_gcm <- pca_data %>%
-                     dplyr::select(.data$gcm, .data$cf, .data$prcomp) %>%
+                     dplyr::select(.data$gcm, .data$cf, .data$pca_type) %>%
                      dplyr::full_join(future_all, by = "gcm") %>%
                      dplyr::full_join(past_all))
 
   if(summarize_by == "month"){
     pca_cf_gcm <- pca_cf_gcm %>%
-      dplyr::group_by(.data$prcomp, .data$month, .data$time)
+      dplyr::group_by(.data$pca_type, .data$month, .data$time)
   }
 
   # --------
@@ -197,7 +228,7 @@ pca_thresholds <- function(SiteID,
 
   if(summarize_by == "season"){
     pca_cf_gcm <- pca_cf_gcm %>%
-      dplyr::group_by(.data$prcomp, .data$quarter, .data$time)
+      dplyr::group_by(.data$pca_type, .data$quarter, .data$time)
   }
 
 
@@ -209,7 +240,7 @@ pca_thresholds <- function(SiteID,
       # sums will be per month/season/year per climate future
       dplyr::mutate(num_years = ifelse(.data$time == "Future", 30,
                                        (past_end - past_start)))  %>%
-      tidyr::drop_na(.data$prcomp) %>%
+      tidyr::drop_na(.data$pca_type) %>%
       dplyr::summarize(gcm = unique(.data$gcm),
         cf = unique(.data$cf),
         precip_monthly = mean(.data$precip, na.rm = TRUE) * 30,
@@ -258,8 +289,7 @@ pca_thresholds <- function(SiteID,
 # CREATE CSV
 # -------------
 
-if(directory == "tempdir()"){print("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input where to save them into the `directory` argument.")}
-
+  if(directory == tempdir()){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
 
 readr::write_csv(method_cf_gcm, here::here(directory,
                                            paste0(SiteID,
@@ -269,5 +299,7 @@ readr::write_csv(method_cf_gcm, here::here(directory,
                                                          "_season_summary_pca.csv",
                                                          "_year_summary_pca.csv"
                                                                 )))))
+
+  return(method_cf_gcm)
 
 } #close function

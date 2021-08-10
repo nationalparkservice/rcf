@@ -1,0 +1,196 @@
+---
+title: "An Introduction to the Relative Climate Futures package"
+author: "Janelle Chrisensen"
+date: "8-20-2021"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{An Introduction to the Relative Climate Futures package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+## About this tutorial
+
+This vignette will walk through how to use the rcf package. Using the functions in this package will enable users to be make the choice to automatically select Global Circulation Models (GCMs) that are most representative of 4 climate futures (CFs) - Warm Wet, Warm Dry (or Damp), Hot Wet, and Hot Dry (or Damp)*.
+
+It can also be used to manipulate the data to produce summaries of threshold values for 25 variables using one of three methods (quadrant, corner, or PCA) and duration (month, season, or year).
+
+*GCMs will be labeled as "damp" rather than "dry" if the mean of future precipitation for all climate futures in that location is greater than zero.
+
+#### Expected knowledge
+
+This package expects that you have a basic understanding of GCMs and that each one represents a plausible climate future. The GCMs in this package are based off of the downscaled climate model [MACA](http://www.climatologylab.org/maca.html) (Multivariate Adaptive Climate Analog) Version 2. Additionally, this vignette assumes you have some knowlege of packages in the `tidyverse` specifically `readr` and the `read_csv()` function, dplyr functions such as `filter()`, `mutate()` and `select()` as well as some understanding of how to use `ggplot2`.
+
+#### Learning goals of this vignette
+
+At the end of this tutorial, you should be able to understand:
+
+- the workflow of the rcf package
+- naming conventions of .csv files that are output from the functions
+- the different ways you can choose to summarize the data (month, season, year)
+- a basic understanding of the different summarization methods in this package (quadrant, corner, PCA) and how to apply them
+
+#### Requirements and considerations
+
+The files in this package, especially the raw data, are large. If you are downloading data in this package using `rcf_data()`, you will need at least *500 MB* of space. If you are using data that you have downloaded from elsewhere, specifically for the `cf_pca()` function, please pay attention to detail and ensure that anywhere you need to enter variable names that they match the column names of your dataset exactly.
+
+#### Setup
+
+[Best practices](https://rstats.wtf/project-oriented-workflow.html#work-in-a-project) in R use project directories, so this vignette will walk through the steps as if this project is using a .Rproj file inside of a directory that will hold all information and resultant data for this project. This vignette will also take use of the `here()` package, rather than relative file paths.
+
+First, let's load some packages.
+
+```{r setup, message=FALSE, warning=FALSE}
+library(rcf)
+library(dplyr)
+library(readr)
+library(here)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(kableExtra)
+```
+
+
+Then let's set the workspace that we will be using for all outputs from this package.
+
+```{r}
+my_directory <- here::here()
+```
+
+
+First, we will download our data using the `rcf_data()` function.
+
+This function downloads all data from the [`cft`](https://www.earthdatascience.org/cft/) package including for all years from 1950 - 2099 for all 40 climate models. Because of the amount of data being downloaded, this function takes about 4 hours to run.
+
+```{r, eval=FALSE}
+
+raw_data <- rcf_data(SiteID = "BAND",
+                     latitude = 35.75758546,
+                     longitude = -106.3054344,
+                     directory = my_directory,
+                     units = "imperial")
+
+```
+
+The output of this function is a file named "BAND.csv", which will be saved in your working directory. It includes daily values of:
+
+```{r, echo=FALSE}
+
+names_table <- data.frame(name = c("Minimum temperature", "Maximum temperature", "Precipitation", "Minimum relative humidity", "Maximum relative humidity", "Date", "Year"), df_name = c("tmin", "tmax", "precip", "rhmin", "rhmax", "date", "yr"))
+
+names_table %>% 
+  kable(col.names = c("Variable Name",
+                      "Column Name")) %>% 
+# Column names - can't change row names in kable.
+  kable_styling(bootstrap_options = "striped",
+                full_width = F,
+                position = "center") 
+# Full width (F), centered table.
+
+```
+
+
+If you choose to download the data from the [`cft`](https://www.earthdatascience.org/cft/) package or another source separately, please ensure that:
+
+- Your data includes at least minimum and maximum temperature and precipitation 
+- The column names of those variables match the names in the table above
+- Your data has a range of at least 30 years in the past and 30 years in the future
+
+
+```{r, eval=FALSE}
+
+
+data <- readr::read_csv(system.file("extdata","BAND_small.csv", package = "rcf"))
+
+```
+
+```{r, eval=FALSE}
+
+# ----------------
+# CALC THRESHOLDS
+# ----------------
+
+calc_thresholds("BAND", data = raw_data, directory = my_directory, units = "imperial")
+
+thresholds <- readr::read_csv('C:/Users/jnchr/Documents/test/BAND_test_thresholds.csv')
+
+
+```
+
+
+```{r, eval=FALSE}
+
+# ----------------
+# CF QUADRANT
+# ----------------
+
+# data <- thresholds
+
+cf_quadrant("BAND_test", data = thresholds, future_year = 2040, summarize_by = "year", method = "quadrant", directory = my_directory)
+
+cf_quadrant("BAND_test", data = thresholds, future_year = 2040, summarize_by = "month", method = "quadrant", directory = my_directory)
+
+cf_quadrant("BAND_test", data = thresholds, future_year = 2040, summarize_by = "season", method = "quadrant", directory = my_directory)
+
+cf_quadrant("BAND_test", data = thresholds, future_year = 2040, summarize_by = "year", method = "corner", directory = my_directory)
+
+cf_quadrant("BAND_test", data = thresholds, future_year = 2040, summarize_by = "month", method = "corner", directory = my_directory)
+
+cf_quadrant("BAND_test", data = thresholds, future_year = 2040, summarize_by = "season", method = "corner", directory = my_directory)
+
+
+```
+
+```{r, eval=FALSE}
+
+# -------------
+# SUMMARIZE FOR PCA
+# -------------
+
+summarize_for_pca("BAND_test", data = thresholds, future_year = 2040, directory = my_directory)
+
+pca_summary <- readr::read_csv('C:/Users/jnchr/Documents/test/BAND_pca_summary.csv')
+
+```
+
+```{r, eval=FALSE}
+
+# -------------
+# CF PCA
+# -------------
+
+ data <- pca_summary
+
+cf_pca("BAND_test", data = pca_summary, variables = "all_threshold", directory = my_directory)
+
+pca_data <- readr::read_csv('C:/Users/jnchr/Documents/test/BAND_test_future_means_pca.csv')
+
+```
+
+```{r, eval=FALSE}
+# -------------
+# PCA THRESHOLDS
+# -------------
+
+# data <- pca_data
+# all_data <- thresholds
+
+pca_thresholds("BAND_test", pca_data = pca_data, all_data = thresholds, summarize_by = "year", directory = my_directory)
+
+pca_thresholds("BAND_test", pca_data = pca_data, all_data = thresholds,  summarize_by = "month", directory = my_directory)
+
+pca_thresholds("BAND_test", pca_data = pca_data, all_data = thresholds,  summarize_by = "season", directory = my_directory)
+
+
+```
+
+
+
+

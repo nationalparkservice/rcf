@@ -77,8 +77,12 @@ cf_quadrant <- function(SiteID = "unnamed_site",
     stop("You may have entered the range of years as (start_year:end_year). Did you mean to write (start_year, end_year)? Vector cannot be of length greater than 2.")
   }
 
-  if(past_years[2] - past_years[1] < 30){
+  if(past_years[2] - past_years[1] < 30 & past_years[1] < past_years[2]){
     stop("Past year range must be at least 30 years.")
+  }
+
+  if(past_years[1] > past_years[2]){
+    stop("Past years entered in incorrect order, should be c(start_year, end_year).")
   }
 
   if(length(future_year) > 1){
@@ -627,7 +631,7 @@ if(mean_change_precip_dry == "TRUE"){
 #if directory isn't temp, save to local file
 # if it is temp, give warning and save to temp directory
 
-if(directory == "tempdir()"){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
+if(directory == tempdir()){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
 
 
 

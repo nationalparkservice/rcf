@@ -325,10 +325,10 @@ summarize_for_pca <- function(SiteID,
 
   if(directory == "tempdir()"){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
 
-  return(threshold_summary)
-
 
 readr::write_csv(threshold_summary, here::here(directory,
                                            paste0(SiteID, "_pca_summary.csv")))
+
+return(threshold_summary)
 
 }
