@@ -28,7 +28,8 @@ Imports:
     tibble,
     tidyr,
     ggfortify,
-    kableExtra
+    kableExtra,
+    devtools
 URL: https://github.com/nationalparkservice/rcf
 BugReports: https://github.com/nationalparkservice/rcf/issues
 Suggests: 

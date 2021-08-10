@@ -55,8 +55,8 @@ library(here)
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(kableExtra)
+library(devtools)
 ```
-
 
 Then let's set the workspace that we will be using for all outputs from this package.
 
@@ -64,10 +64,9 @@ Then let's set the workspace that we will be using for all outputs from this pac
 my_directory <- here::here()
 ```
 
+Nest, we will download our data using the `rcf_data()` function.
 
-First, we will download our data using the `rcf_data()` function.
-
-This function downloads all data from the [`cft`](https://www.earthdatascience.org/cft/) package including for all years from 1950 - 2099 for all 40 climate models. Because of the amount of data being downloaded, this function takes about 4 hours to run.
+This function downloads all data from the [`cft`](https://www.earthdatascience.org/cft/) package for all years from 1950 - 2099 for all 40 climate models. Because of the amount of data being downloaded, this function takes about 4 hours to run.
 
 ```{r, eval=FALSE}
 
@@ -104,10 +103,9 @@ If you choose to download the data from the [`cft`](https://www.earthdatascience
 - Your data has a range of at least 30 years in the past and 30 years in the future
 
 
-```{r, eval=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
-
-data <- readr::read_csv(system.file("extdata","BAND_small.csv", package = "rcf"))
+raw_data <- readr::read_csv(system.file("extdata","BAND_small.csv", package = "rcf"))
 
 ```
 

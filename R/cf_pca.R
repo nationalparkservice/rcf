@@ -1,5 +1,5 @@
 #' Calculate climate futures using PCA
-#' *
+#'
 #' Designates climate futures of "Warm Wet", "Warm Dry", "Hot Wet", "Hot Dry" and "Central"
 #' and calculates mean values for each GCM. Will additionally calculate which models
 #' represent the largest spread in data of variables entered using PCA. Calculates
@@ -26,11 +26,10 @@
 #' One (1) csv file that has selected either 2 or 4 models, depending on `num_cf` chosen
 #' based upon PCA
 #' One (1) png file of the PCA scatterplot, with models labeled
+#'
 #' @export
 #'
 #' @examples
-#'
-#' #' @examples
 #' \dontrun{
 #' # Generate sample data
 #'
@@ -79,6 +78,8 @@
 #' @importFrom rlang .data
 #' @import ggfortify
 #' @importFrom utils globalVariables
+#'
+#' @name cf_pca
 
 utils::globalVariables("where")
 
