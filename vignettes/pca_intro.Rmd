@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r setup, message = FALSE}
 library(rcf)
 library(tidyverse)
 library(here)
@@ -53,7 +53,7 @@ thresholds <- calc_thresholds("BAND", data = raw_data, directory = my_directory,
 
 Once the first two steps are completed, we can move on to summarizing for PCA.
 
-## Summarize threshold values for PCA
+## 1. Summarize threshold values for PCA
 
 The threshold data used for PCA are change values from past to future. Therefore, we calculate those values first, and can enter them into our `cf_pca()` function afterwards.
 
@@ -68,7 +68,7 @@ glimpse(pca_summary)
 ```
 
 
-## Calculate PCA
+## 2. Calculate PCA
 
 If you are using your own data, the only column that you need to have (other than the variables you are using for PCA) is a column labeled `gcm` with the GCMs you want to select from. Looking at more models will guarantee that you are selecting the models that are most representative of your chosen variables. As a reference, the MACA data that is used in this package has 20 models, each with RCPs 4.5 and 8.5, meaning that the PCA selects the 2 or 4 most representative models out of 40 options. It is important that the variables you are choosing match the column names of those variables, otherwise the function will throw an error.
 
@@ -80,7 +80,7 @@ If you are continuing from the workflow above, you can now choose which variable
 Now that you understand how to use the function, let's see what we get from it!
 
 ```{r}
-pca_means <- cf_pca("BAND_test", data = pca_summary, variables = "all_threshold", directory = my_directory)
+pca_means <- cf_pca("BAND", data = pca_summary, variables = "all_threshold", directory = my_directory)
 ```
 
 This function returns a dataframe and an image of the PCA plot and a dataframe named "BAND_future_means_pca.csv" with the models that have been selected for PCA. Any columns that have non-numeric values or NAs will be removed, as R cannot calculate PCA on columns that contain NAs.
@@ -93,12 +93,15 @@ glimpse(pca_means)
 
 And the PCA plot.
 
-![PCA plot](BAND_pca.png)
+```{r, echo=FALSE, out.width = "110%", fig.align='center'}
+knitr::include_graphics("BAND_pca.png")
+```
+
 This plot shows that 37.45% of the variance between all of these variables is represented by PC1 and 22.95% of the variance between these variables is represented by PC2. This indicates that these two components represent approximately 60% of the variance amongst all of these models.
 
 Now that we have selected our models, we can go on to summarize the thresholds by PCA models using the `pca_thresholds()` function.
 
-## Summarize thresholds using PCA models
+## 3. Summarize thresholds using PCA models
 
 This function allows you to summarize your variables by month, season or year as well. You will need to enter two dataframes into this function:
 
@@ -108,7 +111,7 @@ This function allows you to summarize your variables by month, season or year as
 This function is only for the thresholds data that this package calculates. You can choose to select PCA models using whichever variables you want (including variables that are not included in the thresholds) and still be able to summarize threshold variables from the `calc_thresholds()` function by the selected PCA models. You cannot however, summarize a dataset that does not include all threshold variables, i.e. a dataset that has been modified after using the `calc_thresholds()` function.
 
 ```{r}
-threshold_summary <- pca_thresholds("BAND_test", pca_data = pca_means, all_data = thresholds, summarize_by = "year", directory = my_directory)
+threshold_summary <- pca_thresholds("BAND", pca_data = pca_means, all_data = thresholds, summarize_by = "year", directory = my_directory)
 ```
 
 Now, let's look at the summary data:
@@ -117,15 +120,15 @@ Now, let's look at the summary data:
 glimpse(threshold_summary)
 ```
 
+## 4. Graphing
+
 Because this is a dataframe, we can plot any of these variables using ggplot.
 
 Let's look at the same graphs we looked at in An Introduction to the Reproducible Climate Futures package(INSERT LINK)
 
 How does the precipitation change over time in the 4 climate futures?
 
-```{r}
-threshold_summary$time <- factor(threshold_summary$time, levels = c("Historical", "Future"))
-
+```{r, fig.width=15, fig.height=9, out.width="110%"}
 ggplot(data = threshold_summary, aes(x = time, y = precip_yearly)) +
   geom_boxplot(aes(color = time,
                    fill = time),

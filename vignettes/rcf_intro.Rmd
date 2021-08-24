@@ -71,7 +71,7 @@ my_directory <- here::here()
 
 This will set your directory to wherever the .Rproj file is located. You could alternatively create a directory in your project directory for the site you are looking at to save files there.
 
-#### 1. Download the data
+## 1. Download the data
 
 Next, we will download our data using the `rcf_data()` function.
 
@@ -117,7 +117,7 @@ If you choose to download the data from the [`cft`](https://www.earthdatascience
 - The column names of those variables match the names in the table above
 - Your data has a range of at least 30 years in the past and 30 years in the future
 
-#### 2. Calculate thresholds
+## 2. Calculate thresholds
 
 Now that you have your raw data, the next step in the package workflow is to calculate the threshold values for this site.
 
@@ -139,7 +139,7 @@ The output of this function is a csv file named "BAND_thresholds.csv"
 
 For most users of this package, there will only be one more function to run before moving on to graphing. Advanced users can continue to follow along with this vignette or choose to move onto the PCA intro(INSERT LINK) vingette.
 
-#### 3. Calculate Climate Futures
+## 3. Calculate Climate Futures
 
 The `cf_quadrant()` function allows users to calculate climate futures one of two ways:
 
@@ -170,6 +170,8 @@ glimpse(means)
 ```
 
 With these two files, we can now move on to making graphs.
+
+## 4. Graphing
 
 Let's start with two graphs that will show us where the models fall in relation to each other based on changes in temperature and precipitation, centered around our chosen year of 2040. 
 
@@ -227,7 +229,7 @@ Now that we have seen where our models lie in relation to each other, let's make
 How does the precipitation change over time in the 4 climate futures?
 
 ```{r, fig.width=15, fig.height=9, out.width="110%"}
-corner_year$time <- factor(corner_year$time, levels = c("Historical", "Future"))
+# corner_year$time <- factor(corner_year$time, levels = c("Historical", "Future"))
 
 ggplot(data = corner_year, aes(x = time, y = precip_yearly)) +
   geom_boxplot(aes(color = time,
@@ -302,3 +304,31 @@ What if we want to compare by season or month? We can use the `cf_quadrant()` fu
 ```{r}
 corner_month <- cf_quadrant("BAND", data = thresholds, future_year = 2040, summarize_by = "month", method = "corner", directory = my_directory)
 ```
+
+We can then graph by month or season by climate future, or across all climate futures.
+
+```{r, fig.width=15, fig.height=9, warning=FALSE, out.width="110%"}
+corner_month_hw <- corner_month %>% 
+  filter(corner %in% c("Hot Wet")) %>% 
+  mutate(month = lubridate::month(month, label = TRUE)) 
+
+ggplot(data = corner_month_hw, aes(x = month, y = precip_monthly)) +
+  geom_col(aes(fill = time,
+               color = time), 
+           position = "dodge",
+           alpha = 0.7) +
+  scale_color_manual(values = c("#8386CC", "#12045C")) +
+  scale_fill_manual(values = c("#8386CC", "#12045C")) +
+  theme_minimal() +
+  theme(text = element_text(size = 20),
+        legend.title = element_blank(),
+        axis.title.x = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_blank()) +
+  labs(y = "Monthly Precipitation (in)",
+       title = "Comparison of historical and future precipitation in the 'Hot Wet' climate future")
+```
+
+#### 5. Advanced Users
+
+For users that want to try a more advanced approach to finding climate futures, the Introduction to using PCA for model selection(INSERT LINK) tutorial will walk you through the process.
