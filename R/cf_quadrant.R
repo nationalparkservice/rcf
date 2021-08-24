@@ -59,7 +59,7 @@
 cf_quadrant <- function(SiteID = "unnamed_site",
                         data = NULL,
                         future_year = 2040,
-                        past_years = c(1950, 2005),
+                        past_years = c(1950, 2000),
                         method = "quadrant",
                         summarize_by = "year",
                         directory = tempdir()){
@@ -202,7 +202,9 @@ if(method == "quadrant"){
   quadrant_df <- quadrant_df %>%
     dplyr::mutate(corner = NA_character_)
 
-  readr::write_csv(quadrant_df, here::here(directory,
+  if(!file.exists(here::here(directory,
+                             paste0(SiteID,"_future_means.csv"))))readr::write_csv(quadrant_df,
+                                                                                   here::here(directory,
                                            paste0(SiteID,"_future_means.csv")))
 
   # future means = total mean centered on year selected, one for each model and rcp
@@ -466,9 +468,12 @@ if(method == "corner"){
     )) %>%
     dplyr::select(.data$gcm, .data$precip_change, .data$tmax_change, .data$tmin_change, .data$tavg_change, .data$cf, .data$corner)
 
-  readr::write_csv(corner_df, here::here(directory,
-                                         paste0(SiteID, "_future_means.csv")))
 
+
+  if(!file.exists(here::here(directory,
+                             paste0(SiteID,"_future_means.csv"))))readr::write_csv(corner_df,
+                                                                                   here::here(directory,
+                                             paste0(SiteID,"_future_means.csv")))
 
   # -----------------------
   # Attach climate futures to baseline data
@@ -501,7 +506,8 @@ if(summarize_by == "year"){
     dplyr::group_by(.data$corner, .data$yr, .data$time) %>%
     dplyr::filter(.data$corner %in% c("Hot Wet", "Hot Dry", "Warm Wet", "Warm Dry")) %>%
     dplyr::summarize(gcm = unique(.data$gcm),
-      precip_yearly = mean(.data$precip, na.rm = TRUE) *365,
+      cf = unique(cf),
+      precip_yearly = mean(.data$precip, na.rm = TRUE) * 365,
       tmin = mean(.data$tmin, na.rm = TRUE),
       tmax = mean(.data$tmax, na.rm = TRUE),
       tavg = mean(.data$tavg, na.rm = TRUE),
@@ -567,6 +573,7 @@ if(summarize_by %in% c("month", "season")){
     dplyr::mutate(num_years = ifelse(.data$time == "Future", 30, past_end - past_start)) %>%
     dplyr::filter(.data$corner %in% c("Hot Wet", "Hot Dry", "Warm Wet", "Warm Dry")) %>%
     dplyr::summarize(gcm = unique(.data$gcm),
+      cf = unique(cf),
       precip_monthly = mean(.data$precip, na.rm = TRUE)  * 30,
       tmin = mean(.data$tmin, na.rm = TRUE),
       tmax = mean(.data$tmax, na.rm = TRUE),
@@ -633,7 +640,7 @@ if(mean_change_precip_dry == "TRUE"){
 
 if(directory == tempdir()){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
 
-
+method_cf_gcm$time <- factor(method_cf_gcm$time, levels = c("Historical", "Future"))
 
 if(method == "quadrant"){
 

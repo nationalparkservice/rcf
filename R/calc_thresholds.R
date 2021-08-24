@@ -8,12 +8,15 @@
 #'
 #' @param SiteID chosen name to use in file names, attributes, and
 #'  directories. (character)
-#' @param data Default data set to use for .csv creation. Must be created
-#' prior to running function. Follow vignette for example data set creation (data frame)
+#' @param data Default data set to use for .csv creation. Must be created prior to
+#' running function. Follow vignette for example data set creation, and names must match
+#' naming convention mentioned in the vignette, will be the data that results from the
+#' rcf_data function if using that data. (data frame)
 #' @param units the unit type that will be used, defaults to "imperial"
 #' ("imperial" or "metric")
-#' @param past_years years to base past data off of. Cannot be any earlier than 1950.
-#' Must be written as c(past_start, past_end). Defaults to 1950:2000 (numeric)
+#' @param past_years years to base past data off of. Cannot be any earlier than 1950 or later
+#' 2005, due to the definition of past in the MACA v2 data (AMBER TO FIX). Must be written as
+#' c(past_start, past_end). Defaults to 1950 to 2000 (numeric)
 #' @param directory where to save files to. Per CRAN guidelines, this
 #' defaults to a temporary directory and files created will be lost after
 #' R session ends. Specify a path to retain files.
@@ -72,6 +75,10 @@ calc_thresholds <- function(SiteID = "unnamed_site",
     stop("Past years entered in incorrect order, should be c(start_year, end_year).")
   }
 
+  if(units %in% c("imperial", "metric") == FALSE){
+    stop("Units can only be imperial or metric, did you misspell?")
+  }
+
   rh_exists <-  any(names(data) == "rhmin")
   suppressMessages(if(!file.exists(".here")) here::set_here(directory))
 
@@ -92,13 +99,13 @@ calc_thresholds <- function(SiteID = "unnamed_site",
   # get baseline data to compare future scenario pctls to
 
   past_pctl <- data %>%
-    dplyr::filter(.data$yr %in% c(past_end:past_start)) %>%
-    dplyr::group_by(.data$gcm) %>%
+    dplyr::filter(.data$yr %in% c(past_start:past_end)) %>%
     dplyr::summarize(temp_95_pctl_p = stats::quantile(.data$tmax, 0.95, na.rm = TRUE),
                   temp_99_pctl_p = stats::quantile(.data$tmax, 0.99, na.rm = TRUE),
                   temp_5_pctl_p = stats::quantile(.data$tmin, 0.05, na.rm = TRUE),
                   precip_95_pctl_p = stats::quantile(.data$precip[which(.data$precip > no_precip_num)], 0.95, na.rm = TRUE),
-                  precip_99_pctl_p = stats::quantile(.data$precip[which(.data$precip > no_precip_num)], 0.99, na.rm = TRUE))
+                  precip_99_pctl_p = stats::quantile(.data$precip[which(.data$precip > no_precip_num)], 0.99, na.rm = TRUE),
+                  gcm = unique(gcm))
 
 
   # ---------
@@ -205,7 +212,7 @@ calc_thresholds <- function(SiteID = "unnamed_site",
 
   # print statement for lack of rh
 
-  if(rh_exists == FALSE) warning("Cannot calculate heat index. Dataframe does not include relative humitity.")
+  if(rh_exists == FALSE) warning("Cannot calculate heat index. Dataframe does not include relative humidity.")
 
   # -------------------
   # GROWING SEASON LENGTH CALCULATION

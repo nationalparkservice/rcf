@@ -291,6 +291,8 @@ pca_thresholds <- function(SiteID,
 
   if(directory == tempdir()){warning("Files have been saved to temporary directory and will be deleted when this R session is closed. To save locally, input a local directory in which to save files into the `directory` argument.")}
 
+  method_cf_gcm$time <- factor(method_cf_gcm$time, levels = c("Historical", "Future"))
+
 readr::write_csv(method_cf_gcm, here::here(directory,
                                            paste0(SiteID,
                                            ifelse(summarize_by == "month",

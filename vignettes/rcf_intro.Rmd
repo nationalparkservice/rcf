@@ -1,10 +1,10 @@
 ---
-title: "An Introduction to the Relative Climate Futures package"
-author: "Janelle Chrisensen"
+title: "An Introduction to the Reproducible Climate Futures package"
+author: "Janelle Christensen"
 date: "8-20-2021"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{An Introduction to the Relative Climate Futures package}
+  %\VignetteIndexEntry{An Introduction to the Reproducible Climate Futures package}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -21,7 +21,7 @@ This vignette will walk through how to use the rcf package. Using the functions 
 
 It can also be used to manipulate the data to produce summaries of threshold values for 25 variables using one of three methods (quadrant, corner, or PCA) and duration (month, season, or year).
 
-*GCMs will be labeled as "damp" rather than "dry" if the mean of future precipitation for all climate futures in that location is greater than zero.
+*GCMs will be labeled as "damp" rather than "dry" if the mean of future precipitation for climate futures labeled as "dry" in that location are greater than zero.
 
 #### Expected knowledge
 
@@ -36,13 +36,15 @@ At the end of this tutorial, you should be able to understand:
 - the different ways you can choose to summarize the data (month, season, year)
 - a basic understanding of the different summarization methods in this package (quadrant, corner, PCA) and how to apply them
 
-#### Requirements and considerations
+#### Important requirements and considerations
 
 The files in this package, especially the raw data, are large. If you are downloading data in this package using `rcf_data()`, you will need at least *500 MB* of space. If you are using data that you have downloaded from elsewhere, specifically for the `cf_pca()` function, please pay attention to detail and ensure that anywhere you need to enter variable names that they match the column names of your dataset exactly.
 
-#### Setup
-
 [Best practices](https://rstats.wtf/project-oriented-workflow.html#work-in-a-project) in R use project directories, so this vignette will walk through the steps as if this project is using a .Rproj file inside of a directory that will hold all information and resultant data for this project. This vignette will also take use of the `here()` package, rather than relative file paths.
+
+## Package run-through 
+
+#### Workspace setup
 
 First, let's load some packages.
 
@@ -51,9 +53,12 @@ library(rcf)
 library(dplyr)
 library(readr)
 library(here)
+library(ggplot2)
+library(ggrepel)
 ```
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#hidden because they are only affecting the behind the scenes of the tutorial
 library(kableExtra)
 library(devtools)
 ```
@@ -64,19 +69,28 @@ Then let's set the workspace that we will be using for all outputs from this pac
 my_directory <- here::here()
 ```
 
-Nest, we will download our data using the `rcf_data()` function.
+This will set your directory to wherever the .Rproj file is located. You could alternatively create a directory in your project directory for the site you are looking at to save files there.
+
+#### 1. Download the data
+
+Next, we will download our data using the `rcf_data()` function.
 
 This function downloads all data from the [`cft`](https://www.earthdatascience.org/cft/) package for all years from 1950 - 2099 for all 40 climate models. Because of the amount of data being downloaded, this function takes about 4 hours to run.
 
-```{r, eval=FALSE}
+For this function, you can choose your units to be either "imperial" (the default) or "metric." Keep in mind that if using metric, variables that are calculated later, such as the heat index, can only be calculated with Fahrenheit. Results for those variables will convert the temperature to Fahrenheit first.
 
-raw_data <- rcf_data(SiteID = "BAND",
-                     latitude = 35.75758546,
-                     longitude = -106.3054344,
-                     directory = my_directory,
-                     units = "imperial")
+```{r, eval=FALSE}
+# raw_data <- rcf_data(SiteID = "BAND",
+#                      latitude = 35.75758546,
+#                      longitude = -106.3054344,
+#                      directory = my_directory,
+#                      units = "imperial")
 
 ```
+```{r}
+raw_data <- read_csv(here::here("BAND.csv"))
+```
+
 
 The output of this function is a file named "BAND.csv", which will be saved in your working directory. It includes daily values of:
 
@@ -98,97 +112,193 @@ names_table %>%
 
 If you choose to download the data from the [`cft`](https://www.earthdatascience.org/cft/) package or another source separately, please ensure that:
 
-- Your data includes at least minimum and maximum temperature and precipitation 
+- Your data includes at least gcm, date, year, minimum temperature, maximum temperature, average temperature, and precipitation - data that downloads from the cft package will include relative humidity, but the functions will not break if your dataset doesn't include relative humidity
+- Data is daily observations
 - The column names of those variables match the names in the table above
 - Your data has a range of at least 30 years in the past and 30 years in the future
 
+#### 2. Calculate thresholds
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Now that you have your raw data, the next step in the package workflow is to calculate the threshold values for this site.
 
-raw_data <- readr::read_csv(system.file("extdata","BAND_small.csv", package = "rcf"))
+We can calculate thresholds using the `calc_thresholds()` function.
 
-```
 
-```{r, eval=FALSE}
+```{r}
+thresholds <- calc_thresholds("BAND", data = raw_data, directory = my_directory, units = "imperial")
 
-# ----------------
-# CALC THRESHOLDS
-# ----------------
+# let's look at the data
 
-calc_thresholds("BAND", data = raw_data, directory = my_directory, units = "imperial")
-
-thresholds <- readr::read_csv('C:/Users/jnchr/Documents/test/BAND_test_thresholds.csv')
-
+glimpse(thresholds)
 
 ```
 
+As you can see, the majority of the results from this function will be `TRUE` or `FALSE` observations. This is because these are tests of whether or not a value on that day crossed over a specified threshold. `TRUE` meaning that the value is more than (or, for variables like temp_under_5_pctl, is less than) the threshold, `FALSE` meaning it is not.
 
-```{r, eval=FALSE}
+The output of this function is a csv file named "BAND_thresholds.csv"
 
-# ----------------
-# CF QUADRANT
-# ----------------
+For most users of this package, there will only be one more function to run before moving on to graphing. Advanced users can continue to follow along with this vignette or choose to move onto the PCA intro(INSERT LINK) vingette.
 
-# data <- thresholds
+#### 3. Calculate Climate Futures
 
-cf_quadrant("BAND_test", data = thresholds, future_year = 2040, summarize_by = "year", method = "quadrant", directory = my_directory)
+The `cf_quadrant()` function allows users to calculate climate futures one of two ways:
 
-cf_quadrant("BAND_test", data = thresholds, future_year = 2040, summarize_by = "month", method = "quadrant", directory = my_directory)
+1. Quadrant method - this method assigns one of 5 climate futures to each model, depending on change in precipitation and temperature from historic values, centered around one year in the future. The final values in the dataframe are the mean of all observations from all models in the quadrant, summarized by month, season or year, depending on summarization method chosen.
 
-cf_quadrant("BAND_test", data = thresholds, future_year = 2040, summarize_by = "season", method = "quadrant", directory = my_directory)
+2. Corner method - this method assigns one of 4 climate futures to the most extreme model in each quadrant. The final values in this dataframe are the mean of all observations in that model, summarized by month, season or year, depending on the summarization method chosen.
 
-cf_quadrant("BAND_test", data = thresholds, future_year = 2040, summarize_by = "year", method = "corner", directory = my_directory)
-
-cf_quadrant("BAND_test", data = thresholds, future_year = 2040, summarize_by = "month", method = "corner", directory = my_directory)
-
-cf_quadrant("BAND_test", data = thresholds, future_year = 2040, summarize_by = "season", method = "corner", directory = my_directory)
+In total, there are 6 ways you can choose to summarize the threshold data using the `cf_quadrant()` function, but here we will use the corner method and summarize by year.
 
 
+```{r}
+corner_year <- cf_quadrant("BAND", data = thresholds, future_year = 2040, summarize_by = "year", method = "corner", directory = my_directory)
 ```
 
-```{r, eval=FALSE}
+The results from this function are two csvs:
 
-# -------------
-# SUMMARIZE FOR PCA
-# -------------
+1. "BAND_year_summary_c.csv" - the name of this output will change based upon what you enter into the function. Here, this file is named "year_summary" as we chose to summarize by year, but if we had chosen to summarize by month or season, this would be reflected in the file name. The "c" at the end is because we chose the corner method, but would have been labeled "q" if we had chosen the quadrant method.
+2. "BAND_future_means.csv" - this file will have calculated which quadrant each model falls in as well as the most extreme model in each quadrant, if we have chosen the corner method. This csv will have to be read back into R.
 
-summarize_for_pca("BAND_test", data = thresholds, future_year = 2040, directory = my_directory)
+Let's look at each file.
 
-pca_summary <- readr::read_csv('C:/Users/jnchr/Documents/test/BAND_pca_summary.csv')
+```{r}
+glimpse(corner_year)
 
+means <- read_csv(here::here("BAND_future_means.csv"))
+
+glimpse(means)
 ```
 
-```{r, eval=FALSE}
+With these two files, we can now move on to making graphs.
 
-# -------------
-# CF PCA
-# -------------
+Let's start with two graphs that will show us where the models fall in relation to each other based on changes in temperature and precipitation, centered around our chosen year of 2040. 
 
- data <- pca_summary
+First, a graph that shows all models by color in their respective quadrants.
 
-cf_pca("BAND_test", data = pca_summary, variables = "all_threshold", directory = my_directory)
 
-pca_data <- readr::read_csv('C:/Users/jnchr/Documents/test/BAND_test_future_means_pca.csv')
-
+```{r, fig.width=15, fig.height=9, out.width="110%"}
+ggplot(means, aes(x = tavg_change,
+                  y = precip_change,
+                  xmin = min(tavg_change) - 0.15 * min(tavg_change),
+                  xmax = max(tavg_change) + 0.15 * max(tavg_change),
+                  ymin = min(precip_change) - 0.15 * min(precip_change),
+                  ymax = max(precip_change) + 0.15 * max(precip_change))) +
+  geom_text_repel(aes(label = gcm,
+                      color = cf),
+                  position = position_jitter(0,.2)) + 
+  geom_point(size=5,colour="black") +
+  geom_point(aes(color = cf),
+             size = 4) +
+  labs(title = "Changes in climate means centered on 2040 by GCM", 
+       x = "Change in temperature (F)", 
+       y = "Change in precipitation (in)") + 
+  scale_color_manual(values = c("gray", "#E10720",  "#8386CC", "darksalmon", "#12045C")) +
+  scale_fill_manual(values = c("gray", "#E10720",  "#8386CC", "#darksalmon", "#12045C")) + 
+  theme_minimal() +
+  theme(text = element_text(size = 20))
 ```
 
-```{r, eval=FALSE}
-# -------------
-# PCA THRESHOLDS
-# -------------
+Second, because we have chosen the corner method, let's make a graph that highlights the selected models.
 
-# data <- pca_data
-# all_data <- thresholds
-
-pca_thresholds("BAND_test", pca_data = pca_data, all_data = thresholds, summarize_by = "year", directory = my_directory)
-
-pca_thresholds("BAND_test", pca_data = pca_data, all_data = thresholds,  summarize_by = "month", directory = my_directory)
-
-pca_thresholds("BAND_test", pca_data = pca_data, all_data = thresholds,  summarize_by = "season", directory = my_directory)
-
-
+```{r, fig.width=15, fig.height=9, out.width="110%"}
+ggplot(means, aes(x = tavg_change,
+                  y = precip_change,
+                  xmin = min(tavg_change) - 0.15 * min(tavg_change),
+                  xmax = max(tavg_change) + 0.15 * max(tavg_change),
+                  ymin = min(precip_change) - 0.15 * min(precip_change),
+                  ymax = max(precip_change) + 0.15 * max(precip_change))) +
+  geom_text_repel(aes(label = gcm,
+                      color = corner),
+                  position = position_jitter(0,.2)) + 
+  geom_point(aes(label = gcm,
+                 color = corner),
+             size = 5) +
+  labs(title = "Changes in climate means centered on 2040 by GCM", 
+       x = "Change in temperature (F)", 
+       y = "Change in precipitation (in)") + 
+  scale_color_manual(values = c("#E10720",  "#12045C", "darksalmon", "#8386CC")) +
+  scale_fill_manual(values = c("#E10720",  "#12045C", "darksalmon", "#8386CC")) +
+  theme_minimal() +
+  theme(text = element_text(size = 20))
 ```
 
+Now that we have seen where our models lie in relation to each other, let's make some plots using the threshold data.
 
+How does the precipitation change over time in the 4 climate futures?
 
+```{r, fig.width=15, fig.height=9, out.width="110%"}
+corner_year$time <- factor(corner_year$time, levels = c("Historical", "Future"))
 
+ggplot(data = corner_year, aes(x = time, y = precip_yearly)) +
+  geom_boxplot(aes(color = time,
+                   fill = time),
+               alpha = 0.2) +
+  geom_jitter(aes(color = time),
+              size = 2.5,
+              alpha =.6) +
+  facet_wrap(~corner) +
+  scale_color_manual(values = c("#8386CC", "#12045C")) +
+  scale_fill_manual(values = c("#8386CC", "#12045C")) +
+  labs(y = "Yearly Precipitation (in)",
+       title = "Yearly precipitation for individual GCMs representative of 4 climate futures") +
+  theme_minimal() +
+  theme(text = element_text(size = 20),
+        legend.title = element_blank(),
+        axis.title.x = element_blank())
+```
+
+This graph could be made for any of the variables in the output from the `cf_quadrant()` function, so let's look at a few more. 
+
+How do number of days that exceed the historical 99th percentile of heat compare in the past and future?
+
+```{r, fig.width=15, fig.height=9, out.width="110%"}
+ggplot(data = corner_year, aes(x = time, y = temp_over_99_pctl)) +
+  geom_boxplot(aes(color = time,
+                   fill = time),
+               alpha = 0.2) +
+  geom_jitter(aes(color = time),
+              size = 2.5,
+              alpha =.6) +
+  facet_wrap(~corner) +
+  scale_color_manual(values = c("darksalmon", "#E10720")) +
+  scale_fill_manual(values = c("darksalmon", "#E10720")) +
+  labs(y = "Number of days per year",
+       title = "Days where temperature exceeds the 99th percentile for\n individual GCMs representative of 4 climate futures") +
+  theme_minimal() +
+  theme(text = element_text(size = 20),
+        legend.title = element_blank(),
+        axis.title.x = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+```
+
+What about the growing season length between models? How does that compare between the four climate futures?
+
+```{r, fig.width=15, fig.height=9, warning=FALSE, out.width="110%"}
+corner_year_future <- corner_year %>%
+filter(time %in% c("Future"))
+
+ggplot(data = corner_year_future, aes(x = time, y = grow_length)) +
+  geom_boxplot(aes(color = corner,
+                   fill = corner),
+               alpha = 0.2) +
+  geom_jitter(aes(color = corner),
+              size = 2.5,
+              alpha =.6) +
+  facet_grid(~corner) +
+  scale_color_manual(values = c("#8FD834", "#72CC50", "#019875", "#00AEAD")) +
+  scale_fill_manual(values = c("#8FD834", "#72CC50", "#019875", "#00AEAD")) +
+  labs(y = "Length of growing season",
+       title = "Growing season length for individual GCMs representative of 4 climate futures") +
+  theme_minimal() +
+  theme(text = element_text(size = 20),
+        legend.title = element_blank(),
+        axis.title.x = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_blank())
+```
+
+What if we want to compare by season or month? We can use the `cf_quadrant()` function again, this time summarizing by either month or season.
+
+```{r}
+corner_month <- cf_quadrant("BAND", data = thresholds, future_year = 2040, summarize_by = "month", method = "corner", directory = my_directory)
+```

@@ -214,7 +214,6 @@ variables_df <- data %>%
   pca_cf_gcm <- future_all %>%
     dplyr::full_join(pc_models, by = "gcm")
 
-
   readr::write_csv(pca_cf_gcm, here::here(directory,
                                           paste(SiteID,
                                                 "future_means_pca.csv",

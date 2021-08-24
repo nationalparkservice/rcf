@@ -1,42 +1,102 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+<!-- badges: start -->
+<!-- badges: end -->
+
 # Reproducible Climate Futures (rcf)
 
 ## Overview
 
-This package aims to make acquiring and working with [MACA v2](http://www.climatologylab.org/maca.html) climate data faster and easier and to provide a number of summary statistics that can be used to visualize different climate futures. Ultimately, having access to this data supports planning efforts that aim to incorporate climate change.
+This package aims to make acquiring and working with [MACA
+v2](http://www.climatologylab.org/maca.html) climate data faster and
+easier and to provide a number of summary statistics that can be used to
+visualize different climate futures. Ultimately, having access to this
+data supports planning efforts that aim to incorporate climate change.
 
 ## Installation
 
-Until approval on CRAN, you can download the development version of `rcf`
+Until approval on CRAN, you can download the development version of
+`rcf`
 
-```{r}
-install.pagages("devtools")
+You can install the released version of rcf from
+[CRAN](https://CRAN.R-project.org) with:
+
+``` r
+install.packages("rcf")
+```
+
+And the development version from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
 devtools::install_github("nationalparkservice/rcf")
+```
 
+``` r
 library(tidyverse)
+#> -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
+#> v ggplot2 3.3.5     v purrr   0.3.4
+#> v tibble  3.1.3     v dplyr   1.0.7
+#> v tidyr   1.1.3     v stringr 1.4.0
+#> v readr   2.0.1     v forcats 0.5.1
+#> Warning: package 'readr' was built under R version 4.1.1
+#> -- Conflicts ------------------------------------------ tidyverse_conflicts() --
+#> x dplyr::filter() masks stats::filter()
+#> x dplyr::lag()    masks stats::lag()
 library(rcf)
 ```
+
 ## Usage
 
-Download data using the `rcf_data()` function to start visualizing climate futures
+Download data using the `rcf_data()` function to start visualizing
+climate futures
 
-```{r}
-raw_data <- rcf_data(SiteID = "BAND",
-                     latitude = 35.75758546,
-                     longitude = -106.3054344,
-                     units = "imperial")
+``` r
+# raw_data <- rcf_data(SiteID = "BAND",
+#                      latitude = 35.75758546,
+#                      longitude = -106.3054344,
+#                      units = "imperial")
 ```
 
-Calculate threshold values using `calc_thresholds()` and summarize them by month, season or year as well as by quadrant or the most extreme model in each quadrant usind `cf_quadrant()`.
+``` r
+raw_data <- read_csv(here::here("BAND.csv"))
+#> Rows: 2191480 Columns: 10
+#> -- Column specification --------------------------------------------------------
+#> Delimiter: ","
+#> chr  (2): gcm, units
+#> dbl  (7): yr, precip, tmin, tmax, tavg, rhmin, rhmax
+#> dttm (1): date
+#> 
+#> i Use `spec()` to retrieve the full column specification for this data.
+#> i Specify the column types or set `show_col_types = FALSE` to quiet this message.
+```
 
-```{r}
+Calculate threshold values using `calc_thresholds()` and summarize them
+by month, season or year as well as by quadrant or the most extreme
+model in each quadrant using `cf_quadrant()`.
+
+``` r
 thresholds <- calc_thresholds("BAND", data = raw_data, units = "imperial")
-
+#> Adding missing grouping variables: `gcm`
+#> Warning in calc_thresholds("BAND", data = raw_data, units = "imperial"): Files
+#> have been saved to temporary directory and will be deleted when this R session
+#> is closed. To save locally, input a local directory in which to save files into
+#> the `directory` argument.
+#> Warning in calc_thresholds("BAND", data = raw_data, units = "imperial"):
+#> thresholds.csv generated successfully. DO NOT edit this csv in excel. File is
+#> too large and data will be lost, causing errors in future calculations.
 quadrant_year <- cf_quadrant("BAND", data = thresholds, future_year = 2040, summarize_by = "year", method = "quadrant")
+#> Warning in cf_quadrant("BAND", data = thresholds, future_year = 2040,
+#> summarize_by = "year", : Files have been saved to temporary directory and
+#> will be deleted when this R session is closed. To save locally, input a local
+#> directory in which to save files into the `directory` argument.
 ```
 
-From here we can use `ggplot` to visualize any variables and how they compare between the 4 climate futures as well as between past and future.
+From here we can use `ggplot2` to visualize any variables and how they
+compare between the 4 climate futures as well as between past and
+future.
 
-```{r}
+``` r
 quadrant_year_future <- quadrant_year %>%
 filter(time %in% c("Future"))
 
@@ -48,30 +108,19 @@ geom_jitter(alpha = 0.7,
 scale_fill_viridis_d() +
 scale_color_viridis_d() +
   labs(y = "Number of days per year",
-       title = "Days that have a freeze thaw cycle by climate future")
-  theme(axis.title.x = element_blank())
+       title = "Days that have a freeze thaw cycle by climate future") +
+  theme(axis.title.x = element_blank()) +
+  theme_minimal()
 ```
+
+<img src="man/figures/README-unnamed-chunk-6-1.png" width="110%" />
+
 ## Explore further
 
-For a more in-depth explanation of the `rcf` package and different ways to download the data, you can follow along with [An Introduction to the Reproducible Climate Futures package](https://github.com/nationalparkservice/rcf/tree/main/vignettes).
+For a more in-depth explanation of the `rcf` package and different ways
+to download the data, you can follow along with An Introduction to the
+Reproducible Climate Futures package(INSERT LINK).
 
 ## Data
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
-library(kableExtra)
-
-names_table <- data.frame(name = c("Minimum temperature", "Maximum temperature", "Precipitation", "Minimum relative humidity", "Maximum relative humidity", "Date", "Year", "Month", "Day of Year", "Heat Index", "Heat Index Extreme Caution", "Heat Index Dangerous", "Temperature over the 95th percentile", "Temperature over the 99th percentile", "95th percentile length", "Temperature below freezing", "Below freezing length", "Temperature below the 5th percentile", "No precipitation", "No Precipitation Length", "Precipitation above the 95th percentile", "Precipitation above the 99th percentile", "Moderate Precipitation", "Heavy precipitation", "Freeze thaw", "Growing degree day", "Growing degree day length", "Non growing degree day length", "Frost", "Growing season length"), df_name = c("tmin", "tmax", "precip", "rhmin", "rhmax", "date", "yr", "month", "doy", "heat_index", "heat_index_ec", "heat_index_dan", "temp_over_95_pctl", "temp_over_99_pctl", "temp_over_95_pctl_length", "temp_under_freeze", "temp_under_freeze_length", "temp_under_5_pctl", "no_precip", "no_precip_length", "precip_95_pctl", "precip_99_pctl", "precip_moderate", "precip_heavy", "freeze_thaw", "gdd", "gdd_count", "not_gdd_count", "frost", "grow_length"), calculation = c("Downloaded data", "Downloaded data", "Downloaded data", "Downloaded data", "Downloaded data", "Downloaded data", "Downloaded data", "Downloaded data", "Downloaded data", "Heat index calculation", "Temperature between 90-102F", "Temperature between 103-124F", "Temperature exceeds historic 95th pctl", "Temperature exceeds historic 99th pctl", "Consecutive days with temperature over the 95th percentile", "Temperature below 32F or 0C", "Consecutive days with temperature below freezing", "Temperature falls below historic 5th pctl", "Precipitation less than 0.04 in or 1 mm", "Consecutive days with no precipitation", "Precipitation exceeds historic 95th pctl", "Precipitation exceeds historic 99th pctl", "Precipitation greater than 1 in or 25 mm", "Precipitation greater than 2 in or 50 mm", "Minimum temperature below 28F or -2.2C, maximum temperature above 34F or 1.1C", "Temperature exceeds 41F or 5C", "Consecutive growing degree days","Consecutive non growing degree days", "Growing degree day with minimum temperature below 32F or 0C", "Growing season length"))
-
-names_table %>% 
-  kable(col.names = c("Variable Name",
-                      "Column Name",
-                      "Variable Calculation")) %>% 
-# Column names - can't change row names in kable.
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
-                full_width = F,
-                position = "center") %>% 
-  column_spec(3, width = "20em")
-# Full width (F), centered table.
-
-```
-
+<img src="man/figures/kable_table.png" width="90%" style="display: block; margin: auto;" />
