@@ -1,12 +1,19 @@
 Package: rcf
-Title: What the Package Does (One Line, Title Case)
+Title: Reproductible Climate Futures
 Version: 0.0.0.9000
-Authors@R: 
+Authors@R: c(
     person(given = "Janelle",
            family = "Christesen",
-           role = c("aut", "cre"),
+           role = c("aut"),
            email = "jnchristensen1788@gmail.com")
-Description: What the package does (one paragraph).
+    person(given = "Amber",
+           family = "Runyon",
+           role = c("aut", "cre"),
+           email = "amber_runyon@nps.gov",
+           comment = c(ORCID = "0000-0002-7282-1217"))
+           )
+Maintainer: Amber Runyon <amber_runyon@nps.gov>
+Description: Create divergent climate futures from raw climate data.
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
