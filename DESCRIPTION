@@ -5,7 +5,7 @@ Authors@R: c(
     person(given = "Janelle",
            family = "Christesen",
            role = c("aut"),
-           email = "jnchristensen1788@gmail.com")
+           email = "jnchristensen1788@gmail.com"),
     person(given = "Amber",
            family = "Runyon",
            role = c("aut", "cre"),
