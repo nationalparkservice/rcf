@@ -19,6 +19,7 @@ knitr::opts_chunk$set(
 
 ## Overview
 
+Amber's updates to this package
 This package aims to make acquiring and working with [MACA v2](http://www.climatologylab.org/maca.html) climate data faster and easier and to provide a number of summary statistics that can be used to visualize different climate futures. Ultimately, having access to this data supports planning efforts that aim to incorporate climate change.
 
 ## Installation

@@ -7,11 +7,12 @@
 
 ## Overview
 
-This package aims to make acquiring and working with [MACA
-v2](http://www.climatologylab.org/maca.html) climate data faster and
-easier and to provide a number of summary statistics that can be used to
-visualize different climate futures. Ultimately, having access to this
-data supports planning efforts that aim to incorporate climate change.
+Amber’s updates to this package This package aims to make acquiring and
+working with [MACA v2](http://www.climatologylab.org/maca.html) climate
+data faster and easier and to provide a number of summary statistics
+that can be used to visualize different climate futures. Ultimately,
+having access to this data supports planning efforts that aim to
+incorporate climate change.
 
 ## Installation
 
@@ -36,10 +37,9 @@ devtools::install_github("nationalparkservice/rcf")
 library(tidyverse)
 #> -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
 #> v ggplot2 3.3.5     v purrr   0.3.4
-#> v tibble  3.1.3     v dplyr   1.0.7
+#> v tibble  3.1.4     v dplyr   1.0.7
 #> v tidyr   1.1.3     v stringr 1.4.0
 #> v readr   2.0.1     v forcats 0.5.1
-#> Warning: package 'readr' was built under R version 4.1.1
 #> -- Conflicts ------------------------------------------ tidyverse_conflicts() --
 #> x dplyr::filter() masks stats::filter()
 #> x dplyr::lag()    masks stats::lag()
