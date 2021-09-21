@@ -7,8 +7,13 @@
 
 ## Overview
 
-Amber’s updates to this package This package aims to make acquiring and
-working with [MACA v2](http://www.climatologylab.org/maca.html) climate
+\[Amber to fill in need for divergent, plausible, relevant CFs, with
+citation to Lawrence et al. for justification for this approach and
+methodology. Include brief description of 3 approaches for generating
+CFs and when they should be used.\]
+
+This package aims to make acquiring and working with CMIP5 [MACA
+v2-METDATA](http://www.climatologylab.org/maca.html) downscaled climate
 data faster and easier and to provide a number of summary statistics
 that can be used to visualize different climate futures. Ultimately,
 having access to this data supports planning efforts that aim to
@@ -16,15 +21,11 @@ incorporate climate change.
 
 ## Installation
 
-Until approval on CRAN, you can download the development version of
+Until approval on CRAN, you should download the development version of
 `rcf`
 
 You can install the released version of rcf from
 [CRAN](https://CRAN.R-project.org) with:
-
-``` r
-install.packages("rcf")
-```
 
 And the development version from [GitHub](https://github.com/) with:
 
@@ -32,6 +33,11 @@ And the development version from [GitHub](https://github.com/) with:
 # install.packages("devtools")
 devtools::install_github("nationalparkservice/rcf")
 ```
+
+<!-- Once CRAN is approved, provide instructions for installation from CRAN, for now commented out -->
+<!-- ``` r -->
+<!-- install.packages("rcf") -->
+<!-- ``` -->
 
 ``` r
 library(tidyverse)
@@ -48,8 +54,22 @@ library(rcf)
 
 ## Usage
 
-Download data using the `rcf_data()` function to start visualizing
-climate futures
+The first step in creating climate futures is downloading downscaled
+climate data for your location of interest. This package uses the [cft
+package](https://github.com/earthlab/cft), created by the North Central
+Climate Adaptation Science Center and EarthLab. Data can be downloaded
+from a specific point by inputing coordinates into the `rcf_data()`
+function. If you would like to download and summarize spatial explicit
+data (i.e. from multiple grid cells) or would like more information on
+the cft package, there is a detailed vignette on the project GitHub
+page.
+
+*Note: check for cft package updates periodically.*
+
+Depending on internet connections and processing power, download time
+for a single grid cell averages about 80 minutes. The simplest and
+fastest method for generating climate futures is to download a single
+grid cell using the `rcf_data()` function.
 
 ``` r
 # raw_data <- rcf_data(SiteID = "BAND",
@@ -58,17 +78,13 @@ climate futures
 #                      units = "imperial")
 ```
 
+Data used in this vignette can be downloaded
+[here](https://irmadev.nps.gov/DataStore/Reference/Profile/2286572) and
+read in using the following code:
+
 ``` r
-raw_data <- read_csv(here::here("BAND.csv"))
-#> Rows: 2191480 Columns: 10
-#> -- Column specification --------------------------------------------------------
-#> Delimiter: ","
-#> chr  (2): gcm, units
-#> dbl  (7): yr, precip, tmin, tmax, tavg, rhmin, rhmax
-#> dttm (1): date
-#> 
-#> i Use `spec()` to retrieve the full column specification for this data.
-#> i Specify the column types or set `show_col_types = FALSE` to quiet this message.
+data_file_location <- "Directory where you stored data"
+raw_data <- read.csv(paste0(raw_file_location,"/BAND.csv"))
 ```
 
 Calculate threshold values using `calc_thresholds()` and summarize them
@@ -113,7 +129,7 @@ scale_color_viridis_d() +
   theme_minimal()
 ```
 
-<img src="man/figures/README-unnamed-chunk-6-1.png" width="110%" />
+<img src="man/figures/README-unnamed-chunk-7-1.png" width="110%" />
 
 ## Explore further
 

@@ -56,7 +56,7 @@ _Note: check for cft package updates periodically._
  Depending on internet connections and processing power, download time for a single grid cell averages about 80 minutes. The simplest and fastest method for generating climate futures is to download a single grid cell using the `rcf_data()` function.
 
 
-```{r}
+```{r, eval=FALSE}
 # raw_data <- rcf_data(SiteID = "BAND",
 #                      latitude = 35.75758546,
 #                      longitude = -106.3054344,
@@ -65,9 +65,9 @@ _Note: check for cft package updates periodically._
 
 Data used in this vignette can be downloaded [here](https://irmadev.nps.gov/DataStore/Reference/Profile/2286572) and read in using the following code:
 
-```{r}
+```{r, eval=FALSE}
 data_file_location <- "Directory where you stored data"
-raw_data <- read_csv(paste0(raw_file_location,"/BAND.csv"))
+raw_data <- read.csv(paste0(raw_file_location,"/BAND.csv"))
 
 ```
 
