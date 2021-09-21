@@ -85,7 +85,6 @@ For this function, you can choose your units to be either "imperial" (the defaul
 #                      longitude = -106.3054344,
 #                      directory = my_directory,
 #                      units = "imperial")
-
 ```
 ```{r}
 raw_data <- read_csv(here::here("BAND.csv"))
@@ -137,7 +136,7 @@ As you can see, the majority of the results from this function will be `TRUE` or
 
 The output of this function is a csv file named "BAND_thresholds.csv"
 
-For most users of this package, there will only be one more function to run before moving on to graphing. Advanced users can continue to follow along with this vignette or choose to move onto the PCA intro(INSERT LINK) vingette.
+For most users of this package, there will only be one more function to run before moving on to graphing. Advanced users can continue to follow along with this vignette or choose to move onto the [PCA intro](INSERT LINK) vignette.
 
 ## 3. Calculate Climate Futures
 
@@ -163,7 +162,11 @@ Let's look at each file.
 
 ```{r}
 glimpse(corner_year)
+```
 
+Because there are 2 csvs that come out of this function, the csv for the future means must be read in manually. 
+
+```{r}
 means <- read_csv(here::here("BAND_future_means.csv"))
 
 glimpse(means)
@@ -238,7 +241,7 @@ ggplot(data = corner_year, aes(x = time, y = precip_yearly)) +
   geom_jitter(aes(color = time),
               size = 2.5,
               alpha =.6) +
-  facet_wrap(~corner) +
+  facet_wrap(~corner) + #facet_grid for all next to each other
   scale_color_manual(values = c("#8386CC", "#12045C")) +
   scale_fill_manual(values = c("#8386CC", "#12045C")) +
   labs(y = "Yearly Precipitation (in)",
