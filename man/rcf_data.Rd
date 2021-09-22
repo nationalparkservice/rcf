@@ -5,7 +5,7 @@
 \title{Download MACA data from the cft package}
 \usage{
 rcf_data(
-  SiteID,
+  SiteID = "unnamed_site",
   latitude,
   longitude,
   units = "imperial",

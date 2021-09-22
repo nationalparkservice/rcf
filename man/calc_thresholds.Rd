@@ -16,14 +16,17 @@ calc_thresholds(
 \item{SiteID}{chosen name to use in file names, attributes, and
 directories. (character)}
 
-\item{data}{Default data set to use for .csv creation. Must be created
-prior to running function. Follow vignette for example data set creation (data frame)}
+\item{data}{Default data set to use for .csv creation. Must be created prior to
+running function. Follow vignette for example data set creation, and names must match
+naming convention mentioned in the vignette, will be the data that results from the
+rcf_data function if using that data. (data frame)}
 
 \item{units}{the unit type that will be used, defaults to "imperial"
 ("imperial" or "metric")}
 
-\item{past_years}{years to base past data off of. Cannot be any earlier than 1950.
-Must be written as c(past_start, past_end). Defaults to 1950:2000 (numeric)}
+\item{past_years}{years to base past data off of. Cannot be any earlier than 1950 or later
+2005, due to the definition of past in the MACA v2 data (AMBER TO FIX). Must be written as
+c(past_start, past_end). Defaults to 1950 to 2000 (numeric)}
 
 \item{directory}{where to save files to. Per CRAN guidelines, this
 defaults to a temporary directory and files created will be lost after
@@ -41,24 +44,22 @@ outside of R. Editing this dataframe outside of R will result in a loss of data,
 lead to inaccurate results.
 }
 \examples{
-\dontrun{
 
 # Generate sample data
 
 data <- data.frame(
-date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
-yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 10),
+date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 1000),
+yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 100),
 gcm = rep(c("bcc-csm1-1.rcp45", "BNU-ESM.rcp45", "CanESM2.rcp85", "CCSM4.rcp45",
-"CSIRO-Mk3-6-0.rcp45"), each = 20),
-precip = rnorm(100),
-tmin = rnorm(100),
-tmax = rnorm(100),
-rhmax = rnorm(100),
-rhmin = rnorm(100),
-tavg = rnorm(100)
+"CSIRO-Mk3-6-0.rcp45"), each = 200),
+precip = rnorm(1000),
+tmin = rnorm(1000),
+tmax = rnorm(1000),
+rhmax = rnorm(1000),
+rhmin = rnorm(1000),
+tavg = rnorm(1000)
 )
 
-calc_thresholds("SCBL", data = df, units = "imperial")
-}
+calc_thresholds(SiteID = "SCBL", data = data, past_years = c(1950, 2002), units = "imperial")
 
 }

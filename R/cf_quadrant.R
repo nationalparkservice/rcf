@@ -506,7 +506,7 @@ if(summarize_by == "year"){
     dplyr::group_by(.data$corner, .data$yr, .data$time) %>%
     dplyr::filter(.data$corner %in% c("Hot Wet", "Hot Dry", "Warm Wet", "Warm Dry")) %>%
     dplyr::summarize(gcm = unique(.data$gcm),
-      cf = unique(cf),
+      cf = unique(.data$cf),
       precip_yearly = mean(.data$precip, na.rm = TRUE) * 365,
       tmin = mean(.data$tmin, na.rm = TRUE),
       tmax = mean(.data$tmax, na.rm = TRUE),
@@ -573,7 +573,7 @@ if(summarize_by %in% c("month", "season")){
     dplyr::mutate(num_years = ifelse(.data$time == "Future", 30, past_end - past_start)) %>%
     dplyr::filter(.data$corner %in% c("Hot Wet", "Hot Dry", "Warm Wet", "Warm Dry")) %>%
     dplyr::summarize(gcm = unique(.data$gcm),
-      cf = unique(cf),
+      cf = unique(.data$cf),
       precip_monthly = mean(.data$precip, na.rm = TRUE)  * 30,
       tmin = mean(.data$tmin, na.rm = TRUE),
       tmax = mean(.data$tmax, na.rm = TRUE),

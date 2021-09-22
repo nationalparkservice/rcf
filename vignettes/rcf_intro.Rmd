@@ -87,7 +87,7 @@ For this function, you can choose your units to be either "imperial" (the defaul
 #                      units = "imperial")
 ```
 ```{r}
-raw_data <- read_csv(here::here("BAND.csv"))
+raw_data <- read_csv("https://irmadev.nps.gov/DataStore/DownloadFile/660685")
 ```
 
 

@@ -8,7 +8,7 @@ cf_quadrant(
   SiteID = "unnamed_site",
   data = NULL,
   future_year = 2040,
-  past_years = c(1950, 2005),
+  past_years = c(1950, 2000),
   method = "quadrant",
   summarize_by = "year",
   directory = tempdir()

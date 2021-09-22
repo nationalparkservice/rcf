@@ -27,25 +27,23 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #'
 #' # Generate sample data
 #'
 #' data <- data.frame(
-#' date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
-#' yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 10),
+#' date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 1000),
+#' yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 100),
 #' gcm = rep(c("bcc-csm1-1.rcp45", "BNU-ESM.rcp45", "CanESM2.rcp85", "CCSM4.rcp45",
-#' "CSIRO-Mk3-6-0.rcp45"), each = 20),
-#' precip = rnorm(100),
-#' tmin = rnorm(100),
-#' tmax = rnorm(100),
-#' rhmax = rnorm(100),
-#' rhmin = rnorm(100),
-#' tavg = rnorm(100)
+#' "CSIRO-Mk3-6-0.rcp45"), each = 200),
+#' precip = rnorm(1000),
+#' tmin = rnorm(1000),
+#' tmax = rnorm(1000),
+#' rhmax = rnorm(1000),
+#' rhmin = rnorm(1000),
+#' tavg = rnorm(1000)
 #' )
 #'
-#' calc_thresholds("SCBL", data = df, units = "imperial")
-#'}
+#' calc_thresholds(SiteID = "SCBL", data = data, past_years = c(1950, 2002), units = "imperial")
 #'
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
@@ -105,7 +103,7 @@ calc_thresholds <- function(SiteID = "unnamed_site",
                   temp_5_pctl_p = stats::quantile(.data$tmin, 0.05, na.rm = TRUE),
                   precip_95_pctl_p = stats::quantile(.data$precip[which(.data$precip > no_precip_num)], 0.95, na.rm = TRUE),
                   precip_99_pctl_p = stats::quantile(.data$precip[which(.data$precip > no_precip_num)], 0.99, na.rm = TRUE),
-                  gcm = unique(gcm))
+                  gcm = unique(.data$gcm))
 
 
   # ---------
@@ -266,4 +264,3 @@ calc_thresholds <- function(SiteID = "unnamed_site",
 
     return(thresholds)
 }
-

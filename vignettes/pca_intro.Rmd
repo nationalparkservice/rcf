@@ -16,8 +16,11 @@ knitr::opts_chunk$set(
 
 ```{r setup, message = FALSE}
 library(rcf)
-library(tidyverse)
+library(dplyr)
+library(readr)
 library(here)
+library(ggplot2)
+library(ggrepel)
 
 my_directory <- here::here()
 ```
@@ -45,7 +48,7 @@ To see how to do this, you can follow along with An Introduction to the Reproduc
 #                      directory = my_directory,
 #                      units = "imperial")
 
-raw_data <- read_csv(here::here("BAND.csv"))
+raw_data <- read_csv("https://irmadev.nps.gov/DataStore/DownloadFile/660685")
 
 thresholds <- calc_thresholds("BAND", data = raw_data, directory = my_directory, units = "imperial")
 ```
