@@ -1,4 +1,4 @@
-data_for_pca <- readr::read_csv(system.file("extdata", "BAND_test_pca_summary.csv", package = "rcf"))
+data_for_pca <- readr::read_csv(system.file("extdata", "BAND_pca_summary.csv", package = "rcf"))
 
 data <- readr::read_csv(system.file("extdata","BAND_small.csv", package = "rcf"))
 

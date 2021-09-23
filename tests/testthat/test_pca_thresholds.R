@@ -1,9 +1,15 @@
-pca_data <- readr::read_csv(system.file("extdata", "BAND_test_pca_summary.csv", package = "rcf"))
-pca_data <- pca_data %>%
-    dplyr::filter(gcm %in% c("bcc-csm1-1.rcp45", "bcc-csm1-1.rcp85", "BNU-ESM.rcp45",
-                             "BNU-ESM.rcp85", "CanESM2.rcp45", "CanESM2.rcp85", "CCSM4.rcp45",
-                             "CCSM4.rcp85","GFDL-ESM2G.rcp45", "GFDL-ESM2G.rcp85"))
-all_data <- readr::read_csv(system.file("extdata","BAND_thresholds.csv", package = "rcf"))
+pca_data <- readr::read_csv(system.file("extdata", "BAND_pca_summary.csv", package = "rcf"))
+# pca_data <- pca_data %>%
+#     dplyr::filter(gcm %in% c("bcc-csm1-1.rcp45", "bcc-csm1-1.rcp85", "BNU-ESM.rcp45",
+#                              "BNU-ESM.rcp85", "CanESM2.rcp45", "CanESM2.rcp85", "CCSM4.rcp45",
+#                              "CCSM4.rcp85","GFDL-ESM2G.rcp45", "GFDL-ESM2G.rcp85"))
+raw_data <- readr::read_csv("https://irmadev.nps.gov/DataStore/DownloadFile/660685")
+
+all_data <- calc_thresholds(
+    SiteID = "BAND",
+    data = raw_data,
+    past_years = c(1950,2000))
+  #readr::read_csv(system.file("extdata","BAND_thresholds.csv", package = "rcf"))
 
 
 my_directory <- here::here()
