@@ -1,15 +1,13 @@
 data <- readr::read_csv(system.file("extdata","BAND_small.csv", package = "rcf"))
 
-my_directory <- here::here()
+# my_directory <- here::here()
 
 test_that("Function results in a dataframe", {
   skip_on_cran()
   pca_data <- summarize_for_pca(SiteID = "BAND",
                                data = calc_thresholds(SiteID = "BAND",
                                                       data = data,
-                                                      past_years = c(1950,2000),
-                                                      directory = my_directory),
-                               directory = my_directory)
+                                                      past_years = c(1950,2000)))
   expect_s3_class(pca_data, "data.frame")
 })
 
@@ -74,10 +72,10 @@ test_that("Future year is between 2040 and 2084", {
     regexp = "Future year can only be")
 })
 
-
-test_that("tempdir() gives warning", {
-  expect_warning(calc_thresholds(SiteID = "BAND",
-                                 data = data,
-                                 past_years = c(1950, 2000)),
-                 regexp = "Files have been saved to temporary directory")
-})
+#
+# test_that("tempdir() gives warning", {
+#   expect_warning(calc_thresholds(SiteID = "BAND",
+#                                  data = data,
+#                                  past_years = c(1950, 2000)),
+#                  regexp = "Files have been saved to temporary directory")
+# })
