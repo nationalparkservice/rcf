@@ -43,9 +43,9 @@
 #' rhmin = rnorm(1000),
 #' tavg = rnorm(1000)
 #' )
-#'}
 #'
 #' calc_thresholds(SiteID = "SCBL", data = data, past_years = c(1950, 2002), units = "imperial")
+#' }
 #'
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
