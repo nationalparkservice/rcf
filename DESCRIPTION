@@ -3,7 +3,7 @@ Title: Reproductible Climate Futures
 Version: 0.0.1
 Authors@R: c(
     person(given = "Janelle",
-           family = "Christesen",
+           family = "Christensen",
            role = c("aut"),
            email = "jnchristensen1788@gmail.com"),
     person(given = "Amber",
