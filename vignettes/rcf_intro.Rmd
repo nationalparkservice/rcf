@@ -66,7 +66,7 @@ library(devtools)
 Then let's set the workspace that we will be using for all outputs from this package.
 
 ```{r}
-my_directory <- here::here()
+my_directory <- "~"
 ```
 
 This will set your directory to wherever the .Rproj file is located. You could alternatively create a directory in your project directory for the site you are looking at to save files there.
@@ -167,7 +167,7 @@ glimpse(corner_year)
 Because there are 2 csvs that come out of this function, the csv for the future means must be read in manually. 
 
 ```{r}
-means <- read_csv(here::here("BAND_future_means.csv"))
+means <- read_csv("~/BAND_future_means.csv")
 
 glimpse(means)
 ```
