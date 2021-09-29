@@ -9,8 +9,9 @@
 #' name is "unnamed_site" (character)
 #' @param pca_data The data that results from the `cf_pca` function (dataframe)
 #' @param all_data The data that results from the `calc_thresholds` function (dataframe)
-#' @param past_years years to base past data off of. Cannot be any earlier than 1950.
-#' Must be written as c(past_start, past_end). Defaults to 1950:2000 (numeric)
+#' @param past_years years to base past data off of. Cannot be any earlier than 1950 or later
+#' 2005, due to the definition of past in the MACA v2 data (AMBER TO FIX). Must be written as
+#' c(past_start, past_end). Defaults to 1950 to 2000 (numeric)
 #' @param future_year year to center changes from historical data around. Defaults to
 #' 2040 (numeric)
 #' @param summarize_by how to summarize the data, options are "month", "season", "year"

@@ -10,8 +10,9 @@
 #' @param data Default dataset to use for the .csv files this function will create.
 #' Follow vignette for example dataset creation. This should be the output of
 #' the `calc_thresholds` function (data frame)
-#' @param past_years years to base past data off of. Cannot be any earlier than 1950.
-#' Must be written as c(past_start, past_end). Defaults to 1950:2000 (numeric)
+#' @param past_years years to base past data off of. Cannot be any earlier than 1950 or later
+#' 2005, due to the definition of past in the MACA v2 data (AMBER TO FIX). Must be written as
+#' c(past_start, past_end). Defaults to 1950 to 2000 (numeric)
 #' @param future_year year to center changes from historical data around. Defaults to
 #' 2040 (numeric)
 #' @param directory where to save files to. Per CRAN guidelines, this
