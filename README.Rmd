@@ -90,7 +90,7 @@ scale_color_viridis_d() +
 
 ## Explore further
 
-For a more in-depth explanation of the `rcf` package and different ways to download the data, you can follow along with [An Introduction to the Reproducible Climate Futures package](https://github.com/nationalparkservice/rcf/blob/main/vignettes/RCF%20instructions%20-%20simple.pdf).
+For a more in-depth explanation of the `rcf` package and different ways to download the data, you can follow along with [An Introduction to the Reproducible Climate Futures package](https://github.com/Janelle88/rcf_addendum/blob/master/RCF%20instructions%20-%20simple.pdf).
 
 ## Data
 

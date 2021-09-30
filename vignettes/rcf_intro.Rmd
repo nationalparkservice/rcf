@@ -137,7 +137,7 @@ As you can see, the majority of the results from this function will be `TRUE` or
 
 The output of this function is a csv file named "BAND_thresholds.csv"
 
-For most users of this package, there will only be one more function to run before moving on to graphing. Advanced users can continue to follow along with this vignette or choose to move onto the [PCA intro](https://github.com/nationalparkservice/rcf/blob/main/vignettes/RCF%20instructions%20-%20pca.pdf) vignette.
+For most users of this package, there will only be one more function to run before moving on to graphing. Advanced users can continue to follow along with this vignette or choose to move onto the [PCA intro](https://github.com/Janelle88/rcf_addendum/blob/master/RCF%20instructions%20-%20pca.pdf) vignette.
 
 ## 3. Calculate Climate Futures
 
@@ -335,4 +335,4 @@ ggplot(data = corner_month_hw, aes(x = month, y = precip_monthly)) +
 
 #### 5. Advanced Users
 
-For users that want to try a more advanced approach to finding climate futures, the [Introduction to using PCA for model selection](https://github.com/nationalparkservice/rcf/blob/main/vignettes/RCF%20instructions%20-%20pca.pdf) tutorial will walk you through the process.
+For users that want to try a more advanced approach to finding climate futures, the [Introduction to using PCA for model selection](https://github.com/Janelle88/rcf_addendum/blob/master/RCF%20instructions%20-%20pca.pdf) tutorial will walk you through the process.
