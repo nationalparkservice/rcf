@@ -22,8 +22,22 @@ This package aims to make acquiring and working with CMIP5 [MACA
 v2-METDATA](http://www.climatologylab.org/maca.html) downscaled climate
 data faster and easier and to provide a number of summary statistics
 that can be used to visualize different climate futures. Ultimately,
-having access to this data supports planning efforts that aim to
+having access to this data and tools to work with it supports location-specific planning efforts that
 incorporate climate change.
+
+The Global Circulation Models (GCM's) used within this package are those 
+
+The methods contained herein aggregate GCM's into four general groupings representative of plausible and divergent climate futures:
+  (1) Warm & Wet
+  (2) Warm & Dry (or Damp)*
+  (3) Hot & Wet
+  (4) Hot & Dry (or Damp)*
+  
+Then, the user may select any of three methods 
+
+# Package goals
+
+1. Automatically select Global Circulation Models (GCM's) 
 
 
 ## About this tutorial
@@ -59,11 +73,17 @@ This vignette follows [Best practices](https://rstats.wtf/project-oriented-workf
 
 ## Installation
 
-Install the development version of `rcf` from [GitHub](https://github.com/nationalparkservice/rcf):
+Until approval on CRAN, you should download the development version of
+`rcf`
 
-```{r}
-# install.packages("remotes")
-remotes::install_github("nationalparkservice/rcf")
+You can install the released version of rcf from
+[CRAN](https://CRAN.R-project.org) with:
+
+And the development version from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("nationalparkservice/rcf")
 ```
 
 
@@ -352,10 +372,10 @@ ggplot(data = corner_month_hw, aes(x = month, y = precip_monthly)) +
   theme_minimal() +
   theme(text = element_text(size = 20),
         legend.title = element_blank(),
-        axis.title.x = element_blank(),
-        plot.title = element_text(hjust = 0.5),
-        axis.text.x = element_blank()) +
-  labs(y = "Monthly Precipitation (in)",
+        #axis.title.x = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+        #axis.text.x = element_blank()) +
+  labs(y = "Monthly Precipitation (in)", x = "Month",
        title = "Comparison of historical and future precipitation in the 'Hot Wet' climate future")
 ```
 
