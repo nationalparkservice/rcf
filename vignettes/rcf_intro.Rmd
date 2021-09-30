@@ -326,10 +326,8 @@ ggplot(data = corner_month_hw, aes(x = month, y = precip_monthly)) +
   theme_minimal() +
   theme(text = element_text(size = 20),
         legend.title = element_blank(),
-        axis.title.x = element_blank(),
-        plot.title = element_text(hjust = 0.5),
-        axis.text.x = element_blank()) +
-  labs(y = "Monthly Precipitation (in)",
+        plot.title = element_text(hjust = 0.5)) +
+  labs(y = "Monthly Precipitation (in)", x = " ",
        title = "Comparison of historical and future precipitation in the 'Hot Wet' climate future")
 ```
 
