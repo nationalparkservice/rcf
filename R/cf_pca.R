@@ -17,7 +17,7 @@
 #' write "all_threshold" (character)
 #' @param num_cf Number of climate futures to select. Option of 2 or 4. Two models will be the
 #' maximum and minimum values of principal component 1 (PC1), and 4 will be the maximum
-#' and minimun values of principal component 2 (PC2)
+#' and minimum values of principal component 2 (PC2)
 #' @param directory where to save files to. Per CRAN guidelines, this
 #' defaults to a temporary directory and files created will be lost after
 #' R session ends. Specify a path to retain files.

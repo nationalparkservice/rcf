@@ -1,5 +1,5 @@
 Package: rcf
-Title: Reproductible Climate Futures
+Title: Reproducible Climate Futures
 Version: 0.0.1
 Authors@R: c(
     person(given = "Janelle",
