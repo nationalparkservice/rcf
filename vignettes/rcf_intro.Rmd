@@ -15,38 +15,76 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 ```
+
+## About the rcf package
+
+This package aims to make acquiring and working with CMIP5 [MACA v2-METDATA](http://www.climatologylab.org/maca.html) downscaled climate data faster and easier and to provide a number of summary statistics that can be used to visualize different climate futures. Ultimately, having access to this data and tools to work with it supports location-specific planning efforts that incorporate climate change.
+
+The Global Circulation Models (GCM's) used within this package are the same 20 GCM's used in [MACA Version 2](http://www.climatologylab.org/maca.html). These models provide climate variables for historical and future models under both RCP4.5 and RCP8.5.
+
+## Package goals
+
+1. Given the user's area of interest, the package will facilitate the assignment of GCM's into four categories representative of plausible and divergent climate futures:
+  (1) Warm & Wet
+  (2) Warm & Dry (or Damp)*
+  (3) Hot & Wet
+  (4) Hot & Dry (or Damp)*
+
+2. The user can then calculate threshold exceedances for 25 predefined climate metrics using one of three methods:
+  (1) Quadrant
+  (2) Corner
+  (3) PCA
+  
+and one of three time periods:  
+  (1) month  
+  (2) season  
+  (3) year
+  
+
 ## About this tutorial
 
-This vignette will walk through how to use the rcf package. Using the functions in this package will enable users to be make the choice to automatically select Global Circulation Models (GCMs) that are most representative of 4 climate futures (CFs) - Warm Wet, Warm Dry (or Damp), Hot Wet, and Hot Dry (or Damp)*.
+This vignette is the first in a series of two, and is intended for general users of the `rcf` package. Advanced users interested in Principal Component Analyses (PCA) may continue on with [the second vignette in the series](https://github.com/nationalparkservice/rcf/blob/main/vignettes/pca_intro.Rmd) 
 
-It can also be used to manipulate the data to produce summaries of threshold values for 25 variables using one of three methods (quadrant, corner, or PCA) and duration (month, season, or year).
+At the end of this tutorial, the user should understand:
 
-*GCMs will be labeled as "damp" rather than "dry" if the mean of future precipitation for climate futures labeled as "dry" in that location are greater than zero.
+- the workflow of the `rcf` package
+- naming conventions of output .csv files 
+- different ways of temporally summarizing data (i.e., month, season, year)
+- different methods for summarizing data in this package (i.e., quadrant, corner, PCA) and how to apply them
 
-#### Expected knowledge
 
-This package expects that you have a basic understanding of GCMs and that each one represents a plausible climate future. The GCMs in this package are based off of the downscaled climate model [MACA](http://www.climatologylab.org/maca.html) (Multivariate Adaptive Climate Analog) Version 2. Additionally, this vignette assumes you have some knowlege of packages in the `tidyverse` specifically `readr` and the `read_csv()` function, dplyr functions such as `filter()`, `mutate()` and `select()` as well as some understanding of how to use `ggplot2`.
+#### Expected programming knowledge
 
-#### Learning goals of this vignette
+This vignette assumes familiarity with routine functions in the `tidyverse`, specifically `readr` and `read_csv()`; `filter()`, `mutate()` and `select()` in the package `dplyr`; and basic syntax for plot creation in `ggplot2`.
 
-At the end of this tutorial, you should be able to understand:
-
-- the workflow of the rcf package
-- naming conventions of .csv files that are output from the functions
-- the different ways you can choose to summarize the data (month, season, year)
-- a basic understanding of the different summarization methods in this package (quadrant, corner, PCA) and how to apply them
 
 #### Important requirements and considerations
 
-The files in this package, especially the raw data, are large. If you are downloading data in this package using `rcf_data()`, you will need at least *500 MB* of space. If you are using data that you have downloaded from elsewhere, specifically for the `cf_pca()` function, please pay attention to detail and ensure that anywhere you need to enter variable names that they match the column names of your dataset exactly.
+The files in this package, especially the raw data, are large. If the user is downloading data within this package using the included function `rcf_data()`, at least *500 MB* of space must be available. If data have been obtained from elsewhere, specifically for the `cf_pca()` function, the user must ensure that variable names in the `rcf` package match the column names of the outside dataset exactly.
 
-[Best practices](https://rstats.wtf/project-oriented-workflow.html#work-in-a-project) in R use project directories, so this vignette will walk through the steps as if this project is using a .Rproj file inside of a directory that will hold all information and resultant data for this project. This vignette will also take use of the `here()` package, rather than relative file paths.
+This vignette uses a project directory in keeping with [best practices in R](https://rstats.wtf/project-oriented-workflow.html#work-in-a-project). As such, this vignette will walk through the steps as if this project is using a .Rproj file inside of a directory that will hold all information and resultant data for this project. This vignette will also use the `here()` package, rather than relative file paths.
+
+## Get Started
+
+#### Installation
+
+Until approval on CRAN, you should download the development version of
+`rcf` from [GitHub](https://github.com/) as follows:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("nationalparkservice/rcf")
+```
+ 
+The released version will soon be available on [CRAN](https://CRAN.R-project.org) 
+
+
 
 ## Package run-through 
 
 #### Workspace setup
 
-First, let's load some packages.
+First, load dependencies.
 
 ```{r setup, message=FALSE, warning=FALSE}
 library(rcf)
@@ -63,36 +101,38 @@ library(kableExtra)
 library(devtools)
 ```
 
-Then let's set the workspace that we will be using for all outputs from this package.
+Then set the workspace that we will be using for all outputs from this package.
 
 ```{r}
 my_directory <- "~"
 ```
 
-This will set your directory to wherever the .Rproj file is located. You could alternatively create a directory in your project directory for the site you are looking at to save files there.
+This will set your directory to wherever the .Rproj file is located. Alternatively, you could create a folder in your project directory in which to save your files.
 
 ## 1. Download the data
 
-Next, we will download our data using the `rcf_data()` function from the `rcfdata` package, which is currently not officially a part of this package.
+For the purpose of this tutorial, data will be downloaded from the National Park Service via the `readr::read_csv()` function in the code below. Results will appear in your environment as a dataframe called `raw_data`. 
 
-This function downloads all data from the [`cft`](https://www.earthdatascience.org/cft/) package for all years from 1950 - 2099 for all 40 climate models. Because of the amount of data being downloaded, this function takes about 4 hours to run.
-
-For this function, you can choose your units to be either "imperial" (the default) or "metric." Keep in mind that if using metric, variables that are calculated later, such as the heat index, can only be calculated with Fahrenheit. Results for those variables will convert the temperature to Fahrenheit first.
-
-```{r, eval=FALSE}
-# devtools::install_github("nationalparkservice/rcfdata")
-# library(rcfdata)
-# raw_data <- rcf_data(SiteID = "BAND",
-#                      latitude = 35.75758546,
-#                      longitude = -106.3054344,
-#                      units = "imperial")
-```
 ```{r}
 raw_data <- read_csv("https://irmadev.nps.gov/DataStore/DownloadFile/660685")
 ```
 
 
-The output of this function is a file named "BAND.csv", which will be saved in your working directory. It includes daily values of:
+Typically, data will be downloaded using the `rcf_data()` function from the `rcfdata` package, which is not currently available but will be included in a future release. `rcf_data()` downloads all data using the [`cft`](https://www.earthdatascience.org/cft/) package for all years from 1950 - 2099 for all 40 GCM-RCP combinations. Because of the amount of data being downloaded, this function takes about 4 hours to run. 
+
+Variable units may be either "imperial" (the default) or "metric." Keep in mind that if using metric, variables that are calculated later, such as the heat index, can only be calculated with Fahrenheit. Results for those variables will convert the temperature to Fahrenheit first.
+
+```{r, eval=FALSE}
+# devtools::install_github("nationalparkservice/rcfdata")
+# library(rcfdata)
+# raw_data <- rcf_data(SiteID = "BAND", # National Park unit code (BAND = 'Bandelier National Park')
+#                      latitude = 35.75758546, # Latitude of park centroid
+#                      longitude = -106.3054344, # Longitude of park centroid
+#                      units = "imperial")
+```
+
+
+The output of the `rcf_data()` function is a file named "BAND.csv", which will be saved in your working directory.  It includes daily values of:
 
 ```{r, echo=FALSE}
 
@@ -109,46 +149,49 @@ names_table %>%
 
 ```
 
+The functions in this package are compatible with any climate data that meets the following requirements:
 
-If you choose to download the data from the [`cft`](https://www.earthdatascience.org/cft/) package or another source separately, please ensure that:
+- Includes at least gcm, date, year, minimum temperature, maximum temperature, average temperature, and precipitation.*
+- Provides daily observations
+- Column names match the names in the table above (or are formatted accordingly after download)
+- Has a range of at least 30 years of historical (modeled) data and 30 years of future modeled data
 
-- Your data includes at least gcm, date, year, minimum temperature, maximum temperature, average temperature, and precipitation - data that downloads from the cft package will include relative humidity, but the functions will not break if your dataset doesn't include relative humidity
-- Data is daily observations
-- The column names of those variables match the names in the table above
-- Your data has a range of at least 30 years in the past and 30 years in the future
+An example of an external data source that provides appropriate data can be [found here](https://climate.northwestknowledge.net/MACA/gallery_data.php)
+
+*NOTE: data that downloads from the `rcf_data()` function or the `cft` package will include relative humidity, but the functions in this package will still work if your data does not include that variable*
+
 
 ## 2. Calculate thresholds
 
-Now that you have your raw data, the next step in the package workflow is to calculate the threshold values for this site.
+Now that you have your raw data, the next step in the package workflow is to calculate the threshold values for your site of interest. Threshold values are numeric values representing extreme conditions for a given metric (e.g., heat index) specific to the site of interest. This package evaluates threshold values for 25 metrics; these are listed in detail in the `Data` table in the [README file](https://github.com/nationalparkservice/rcf/blob/main/README.md) 
 
-We can calculate thresholds using the `calc_thresholds()` function.
+We calculate thresholds using the `calc_thresholds()` function.
 
 
 ```{r}
 thresholds <- calc_thresholds("BAND", data = raw_data, directory = my_directory, units = "imperial")
 
-# let's look at the data
-
 glimpse(thresholds)
 
 ```
 
-As you can see, the majority of the results from this function will be `TRUE` or `FALSE` observations. This is because these are tests of whether or not a value on that day crossed over a specified threshold. `TRUE` meaning that the value is more than (or, for variables like temp_under_5_pctl, is less than) the threshold, `FALSE` meaning it is not.
+As you can see, the majority of the results from this function are `TRUE` or `FALSE` observations. This is because these are tests of whether or not a value on that day crossed over a specified threshold. `TRUE` means that the value is more extreme than the threshold; `FALSE` means it is not.
 
 The output of this function is a csv file named "BAND_thresholds.csv"
 
-For most users of this package, there will only be one more function to run before moving on to graphing. Advanced users can continue to follow along with this vignette or choose to move onto the [PCA intro](https://github.com/Janelle88/rcf_addendum/blob/master/RCF%20instructions%20-%20pca.pdf) vignette.
+For most users of this package, there will only be one more function to run before moving on to plotting. Advanced users can continue to follow along with this vignette or choose to move onto the [PCA intro](https://github.com/Janelle88/rcf_addendum/blob/master/RCF%20instructions%20-%20pca.pdf) vignette.
 
 ## 3. Calculate Climate Futures
 
 The `cf_quadrant()` function allows users to calculate climate futures one of two ways:
 
-1. Quadrant method - this method assigns one of 5 climate futures to each model, depending on change in precipitation and temperature from historic values, centered around one year in the future. The final values in the dataframe are the mean of all observations from all models in the quadrant, summarized by month, season or year, depending on summarization method chosen.
+1. *Quadrant method* - this method assigns to each model one of five climate futures (Warm Wet, Warm Dry (Damp)*, Hot Wet, Hot Dry (Damp), or Central), depending on change in precipitation and temperature from historic values and centered around one user-specified year in the future (e.g., 2040). The final values in the dataframe are the mean of all observations from all models in the quadrant, summarized by month, season or year, depending on the summarization method chosen.
 
-2. Corner method - this method assigns one of 4 climate futures to the most extreme model in each quadrant. The final values in this dataframe are the mean of all observations in that model, summarized by month, season or year, depending on the summarization method chosen.
+2. *Corner method* - this method assigns one of four climate futures to the most extreme model in each quadrant. The final values in this dataframe are the mean of all observations in that model, summarized by month, season or year, depending on the summarization method chosen.
 
 In total, there are 6 ways you can choose to summarize the threshold data using the `cf_quadrant()` function, but here we will use the corner method and summarize by year.
 
+*GCMs will be labeled as "damp" rather than "dry" if the mean change in future precipitation for all quadrants and relative to historical values is greater than zero.*
 
 ```{r}
 corner_year <- cf_quadrant("BAND", data = thresholds, future_year = 2040, summarize_by = "year", method = "corner", directory = my_directory)
@@ -156,8 +199,9 @@ corner_year <- cf_quadrant("BAND", data = thresholds, future_year = 2040, summar
 
 The results from this function are two csvs:
 
-1. "BAND_year_summary_c.csv" - the name of this output will change based upon what you enter into the function. Here, this file is named "year_summary" as we chose to summarize by year, but if we had chosen to summarize by month or season, this would be reflected in the file name. The "c" at the end is because we chose the corner method, but would have been labeled "q" if we had chosen the quadrant method.
-2. "BAND_future_means.csv" - this file will have calculated which quadrant each model falls in as well as the most extreme model in each quadrant, if we have chosen the corner method. This csv will have to be read back into R.
+1. "BAND_year_summary_c.csv" - the name of this output will change based upon what you enter into the function. Here, this file is named "year_summary" because we chose to summarize by year, but if we had chosen to summarize by month or season, this would be reflected in the file name. The "c" at the end is because we chose the corner method, and would have been labeled "q" if we had chosen the quadrant method.  
+
+2. "BAND_future_means.csv" - this file assigns a quadrant to each model and identifies the most extreme model in each (if we have chosen the corner method). This csv will have to be read back into R.
 
 Let's look at each file.
 
@@ -165,7 +209,7 @@ Let's look at each file.
 glimpse(corner_year)
 ```
 
-Because there are 2 csvs that come out of this function, the csv for the future means must be read in manually. 
+Because there are 2 csv's that come out of this function, the csv for the future means must be read in manually. 
 
 ```{r}
 means <- read_csv("~/BAND_future_means.csv")
@@ -173,13 +217,14 @@ means <- read_csv("~/BAND_future_means.csv")
 glimpse(means)
 ```
 
-With these two files, we can now move on to making graphs.
+With these two files, we can now move on to plotting.
 
-## 4. Graphing
 
-Let's start with two graphs that will show us where the models fall in relation to each other based on changes in temperature and precipitation, centered around our chosen year of 2040. 
+## 4. Plotting
 
-First, a graph that shows all models by color in their respective quadrants.
+Let's start with two plots that will show us where the models fall in relation to each other based on changes in temperature and precipitation, centered around our chosen year of 2040. 
+
+First, we produce a graph that shows all models by color in their respective quadrants:
 
 
 ```{r, fig.width=15, fig.height=9, out.width="110%"}
@@ -204,7 +249,7 @@ ggplot(means, aes(x = tavg_change,
   theme(text = element_text(size = 20))
 ```
 
-Second, because we have chosen the corner method, let's make a graph that highlights the selected models.
+Second, because we have chosen the corner method, let's make a graph that highlights the selected models:
 
 ```{r, fig.width=15, fig.height=9, out.width="110%"}
 ggplot(means, aes(x = tavg_change,
@@ -230,7 +275,8 @@ ggplot(means, aes(x = tavg_change,
 
 Now that we have seen where our models lie in relation to each other, let's make some plots using the threshold data.
 
-How does the precipitation change over time in the 4 climate futures?
+
+First, let's see how the yearly precipitation changes over time in the four climate futures:
 
 ```{r, fig.width=15, fig.height=9, out.width="110%"}
 # corner_year$time <- factor(corner_year$time, levels = c("Historical", "Future"))
@@ -255,7 +301,7 @@ ggplot(data = corner_year, aes(x = time, y = precip_yearly)) +
 
 This graph could be made for any of the variables in the output from the `cf_quadrant()` function, so let's look at a few more. 
 
-How do number of days that exceed the historical 99th percentile of heat compare in the past and future?
+Let's see how the number of days that exceed the historical 99th percentile of heat compare between the past and future:
 
 ```{r, fig.width=15, fig.height=9, out.width="110%"}
 ggplot(data = corner_year, aes(x = time, y = temp_over_99_pctl)) +
@@ -276,6 +322,7 @@ ggplot(data = corner_year, aes(x = time, y = temp_over_99_pctl)) +
         axis.title.x = element_blank(),
         plot.title = element_text(hjust = 0.5))
 ```
+
 
 What about the growing season length between models? How does that compare between the four climate futures?
 
@@ -326,10 +373,12 @@ ggplot(data = corner_month_hw, aes(x = month, y = precip_monthly)) +
   theme_minimal() +
   theme(text = element_text(size = 20),
         legend.title = element_blank(),
-        axis.title.x = element_blank(),
-        plot.title = element_text(hjust = 0.5),
-        axis.text.x = element_blank()) +
-  labs(y = "Monthly Precipitation (in)",
+        #axis.title.x = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+        #axis.text.x = element_blank()) +
+  labs(y = "Monthly Precipitation (in)", x = " ",
+        plot.title = element_text(hjust = 0.5)) +
+  labs(y = "Monthly Precipitation (in)", x = " ",
        title = "Comparison of historical and future precipitation in the 'Hot Wet' climate future")
 ```
 
