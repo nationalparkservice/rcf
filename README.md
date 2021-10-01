@@ -7,25 +7,23 @@
 
 ## Overview
 
-\[Amber to fill in need for divergent, plausible, relevant CFs, with
-citation to Lawrence et al. for justification for this approach and
-methodology. Include brief description of 3 approaches for generating
-CFs and when they should be used.\]
-
-This package aims to make acquiring and working with CMIP5 [MACA
-v2-METDATA](http://www.climatologylab.org/maca.html) downscaled climate
-data faster and easier and to provide a number of summary statistics
-that can be used to visualize different climate futures. Ultimately,
-having access to this data supports planning efforts that aim to
-incorporate climate change.
+This package aims to make acquiring and working with [MACA
+v2](http://www.climatologylab.org/maca.html) climate data faster and
+easier and to provide a number of summary statistics that can be used to
+visualize different climate futures. Ultimately, having access to this
+data supports planning efforts that aim to incorporate climate change.
 
 ## Installation
 
-Until approval on CRAN, you should download the development version of
+Until approval on CRAN, you can download the development version of
 `rcf`
 
 You can install the released version of rcf from
 [CRAN](https://CRAN.R-project.org) with:
+
+``` r
+install.packages("rcf")
+```
 
 And the development version from [GitHub](https://github.com/) with:
 
@@ -34,16 +32,11 @@ And the development version from [GitHub](https://github.com/) with:
 devtools::install_github("nationalparkservice/rcf")
 ```
 
-<!-- Once CRAN is approved, provide instructions for installation from CRAN, for now commented out -->
-<!-- ``` r -->
-<!-- install.packages("rcf") -->
-<!-- ``` -->
-
 ``` r
 library(tidyverse)
 #> -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
 #> v ggplot2 3.3.5     v purrr   0.3.4
-#> v tibble  3.1.4     v dplyr   1.0.7
+#> v tibble  3.1.3     v dplyr   1.0.7
 #> v tidyr   1.1.3     v stringr 1.4.0
 #> v readr   2.0.1     v forcats 0.5.1
 #> -- Conflicts ------------------------------------------ tidyverse_conflicts() --
@@ -54,37 +47,29 @@ library(rcf)
 
 ## Usage
 
-The first step in creating climate futures is downloading downscaled
-climate data for your location of interest. This package uses the [cft
-package](https://github.com/earthlab/cft), created by the North Central
-Climate Adaptation Science Center and EarthLab. Data can be downloaded
-from a specific point by inputing coordinates into the `rcf_data()`
-function. If you would like to download and summarize spatial explicit
-data (i.e. from multiple grid cells) or would like more information on
-the cft package, there is a detailed vignette on the project GitHub
-page.
-
-*Note: check for cft package updates periodically.*
-
-Depending on internet connections and processing power, download time
-for a single grid cell averages about 80 minutes. The simplest and
-fastest method for generating climate futures is to download a single
-grid cell using the `rcf_data()` function.
+Download data using the `rcf_data()` function from the `rcfdata` package
+to start visualizing climate futures
 
 ``` r
+# devtools::install_github("nationalparkservice/rcfdata")
+# library(rcfdata)
 # raw_data <- rcf_data(SiteID = "BAND",
 #                      latitude = 35.75758546,
 #                      longitude = -106.3054344,
 #                      units = "imperial")
 ```
 
-Data used in this vignette can be downloaded
-[here](https://irmadev.nps.gov/DataStore/Reference/Profile/2286572) and
-read in using the following code:
-
 ``` r
-data_file_location <- "Directory where you stored data"
-raw_data <- read.csv(paste0(raw_file_location,"/BAND.csv"))
+raw_data <- read_csv("https://irmadev.nps.gov/DataStore/DownloadFile/660685")
+#> Rows: 2191480 Columns: 10
+#> -- Column specification --------------------------------------------------------
+#> Delimiter: ","
+#> chr  (2): gcm, units
+#> dbl  (7): yr, precip, tmin, tmax, tavg, rhmin, rhmax
+#> dttm (1): date
+#> 
+#> i Use `spec()` to retrieve the full column specification for this data.
+#> i Specify the column types or set `show_col_types = FALSE` to quiet this message.
 ```
 
 Calculate threshold values using `calc_thresholds()` and summarize them
@@ -101,6 +86,7 @@ thresholds <- calc_thresholds("BAND", data = raw_data, units = "imperial")
 #> Warning in calc_thresholds("BAND", data = raw_data, units = "imperial"):
 #> thresholds.csv generated successfully. DO NOT edit this csv in excel. File is
 #> too large and data will be lost, causing errors in future calculations.
+
 quadrant_year <- cf_quadrant("BAND", data = thresholds, future_year = 2040, summarize_by = "year", method = "quadrant")
 #> Warning in cf_quadrant("BAND", data = thresholds, future_year = 2040,
 #> summarize_by = "year", : Files have been saved to temporary directory and
@@ -129,13 +115,14 @@ scale_color_viridis_d() +
   theme_minimal()
 ```
 
-<img src="man/figures/README-unnamed-chunk-7-1.png" width="110%" />
+<img src="man/figures/README-unnamed-chunk-6-1.png" width="110%" />
 
 ## Explore further
 
 For a more in-depth explanation of the `rcf` package and different ways
-to download the data, you can follow along with An Introduction to the
-Reproducible Climate Futures package(INSERT LINK).
+to download the data, you can follow along with [An Introduction to the
+Reproducible Climate Futures
+package](https://github.com/Janelle88/rcf_addendum/blob/master/RCF%20instructions%20-%20simple.pdf).
 
 ## Data
 

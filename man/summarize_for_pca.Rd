@@ -46,47 +46,49 @@ most extreme climate futures from principal components analysis (PCA)
 
 
 \dontrun{
-
 # Generate sample data
 
 data <- data.frame(
-date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
-yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 10),
-month = rep(c(1:10), each = 10),
-quarter = rep(rep(c("DJF", "MAM", "JJA", "SON"), each = 25)),
-gcm = rep(c("bcc-csm1-1.rcp45", "BNU-ESM.rcp45", "CanESM2.rcp85", "CCSM4.rcp45",
-"CSIRO-Mk3-6-0.rcp45"), each = 20),
-precip = rnorm(100),
-tmin = rnorm(100),
-tmax = rnorm(100),
-rhmax = rnorm(100),
-rhmin = rnorm(100),
-tavg = rnorm(100),
-heat_index = rnorm(100),
-heat_index_ec = rnorm(100),
-heat_index_dan = rnorm(100),
-temp_over_95_pctl =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-temp_over_99_pctl =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-temp_over_95_pctl_length =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-temp_under_freeze =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-temp_under_freeze_length =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-temp_under_5_pctl =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-no_precip  =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-no_precip_length =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-precip_95_pctl =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-precip_99_pctl =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-precip_moderate =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-precip_heavy =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-freeze_thaw =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-gdd =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-gdd_count = rnorm(100),
-not_gdd_count = rnorm(100),
-frost = sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-grow_length = rnorm(100),
-units = rep("imperial", each = 100)
+ date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 1000),
+ yr = rep(c(1980, 2040, 1980, 2040, 1980, 2040, 1980, 2040, 1980, 2040, 1980, 2040, 1980,
+            2040, 1980, 2040, 1980, 2040, 1980, 2040), each = 50),
+ month = rep(c(1:10), each = 100),
+ quarter = rep(rep(c("DJF", "MAM", "JJA", "SON"), each = 250)),
+ gcm = rep(c("bcc-csm1-1.rcp45", "BNU-ESM.rcp45", "CanESM2.rcp85", "CCSM4.rcp45",
+             "CSIRO-Mk3-6-0.rcp45"), each = 200),
+ precip = rnorm(1000),
+ tmin = rnorm(1000),
+ tmax = rnorm(1000),
+ rhmax = rnorm(1000),
+ rhmin = rnorm(1000),
+ tavg = rnorm(1000),
+ heat_index = rnorm(1000),
+ heat_index_ec = rnorm(1000),
+ heat_index_dan = rnorm(1000),
+ temp_over_95_pctl =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ temp_over_99_pctl =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ temp_over_95_pctl_length =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000,
+                                               replace = TRUE)),
+ temp_under_freeze =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ temp_under_freeze_length =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000,
+                                               replace = TRUE)),
+ temp_under_5_pctl =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ no_precip  =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ no_precip_length =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ precip_95_pctl =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ precip_99_pctl =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ precip_moderate =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ precip_heavy =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ freeze_thaw =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ gdd =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ gdd_count = rnorm(1000),
+ not_gdd_count = rnorm(1000),
+ frost = as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+ grow_length = rnorm(1000),
+ units = rep("imperial", each = 1000)
 )
 
-summarize_for_pca("SCBL", data = data, 2040)
+summarize_for_pca("SCBL", data = data)
 }
 
 }

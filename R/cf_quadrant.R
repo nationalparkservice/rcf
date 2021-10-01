@@ -11,8 +11,9 @@
 #' prior to running function. Follow vignette for example data set creation (data frame)
 #' @param future_year year to center changes from historical data around. Defaults
 #' to 2040 (numeric)
-#' @param past_years years to base past data off of. Cannot be any earlier than 1950.
-#' Must be written as c(past_start, past_end). Defaults to 1950-2000 (numeric)
+#' @param past_years years to base past data off of. Cannot be any earlier than 1950 or later
+#' 2005, due to the definition of past in the MACA v2 data (AMBER TO FIX). Must be written as
+#' c(past_start, past_end). Defaults to 1950 to 2000 (numeric)
 #' @param method method for calculating resulting .csv. Options "quadrant" and "corner".
 #' "quadrant" will return a data frame in which all models are labeled
 #' in their respective quadrants "hot wet" "hot dry" "warm wet" "warm dry" and "central
@@ -37,22 +38,48 @@
 #' \dontrun{
 #' # Generate sample data
 #'
-#' df <- data.frame(
-#' date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
-#' yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 10),
+#' data <- data.frame(
+#' date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 1000),
+#' yr = rep(c(1980, 2040, 1980, 2040, 1980, 2040, 1980, 2040, 1980, 2040, 1980, 2040, 1980,
+#'            2040, 1980, 2040, 1980, 2040, 1980, 2040), each = 50),
 #' gcm = rep(c("bcc-csm1-1.rcp45", "BNU-ESM.rcp45", "CanESM2.rcp85", "CCSM4.rcp45",
-#' "CSIRO-Mk3-6-0.rcp45"), each = 20),
-#' precip = rnorm(100),
-#' tmin = rnorm(100),
-#' tmax = rnorm(100),
-#' rhmax = rnorm(100),
-#' rhmin = rnorm(100),
-#' tavg = rnorm(100)
+#'             "CSIRO-Mk3-6-0.rcp45"), each = 200),
+#' precip = rnorm(1000),
+#' tmin = rnorm(1000),
+#' tmax = rnorm(1000),
+#' rhmax = rnorm(1000),
+#' rhmin = rnorm(1000),
+#' tavg = rnorm(1000),
+#' heat_index = rnorm(1000),
+#' heat_index_ec = rnorm(1000),
+#' heat_index_dan = rnorm(1000),
+#' temp_over_95_pctl =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' temp_over_99_pctl =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' temp_over_95_pctl_length =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000,
+#'                                               replace = TRUE)),
+#' temp_under_freeze =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' temp_under_freeze_length =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000,
+#'                                               replace = TRUE)),
+#' temp_under_5_pctl =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' no_precip  =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' no_precip_length =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' precip_95_pctl =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' precip_99_pctl =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' precip_moderate =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' precip_heavy =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' freeze_thaw =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' gdd =  as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' gdd_count = rnorm(1000),
+#' not_gdd_count = rnorm(1000),
+#' frost = as.logical(sample(x = c("TRUE","FALSE"), size = 1000, replace = TRUE)),
+#' grow_length = rnorm(1000),
+#' units = rep("imperial", each = 1000)
 #' )
 #'
 #' cf_quadrant("SCBL", data = df, future_year = 2040, past_years = c(1950, 2000),
 #' method = "corner", summarize_by = "year")
-#'}
+#' }
+#'
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
 

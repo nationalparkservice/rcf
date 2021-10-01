@@ -30,49 +30,46 @@
 #' @export
 #'
 #' @examples
+#'
 #' \dontrun{
 #' # Generate sample data
 #'
 #' data <- data.frame(
-#' date = sample(seq(as.Date('1950/01/01'), as.Date('2099/12/31'), by="day"), 100),
-#' yr = rep(c(1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050), each = 10),
-#' month = rep(c(1:10), each = 10),
-#' quarter = rep(rep(c("DJF", "MAM", "JJA", "SON"), each = 25)),
-#' gcm = paste0(rep(letters[1:5], each = 20),
-#' rep(letters[1:20], each = 5),
-#' rep(letters[20:26], each = 1)),
-#' precip = rnorm(100),
-#' tmin = rnorm(100),
-#' tmax = rnorm(100),
-#' rhmax = rnorm(100),
-#' rhmin = rnorm(100),
-#' tavg = rnorm(100)
-#' heat_index = rnorm(100)
-#' heat_index_ec = rnorm(100),
-#' heat_index_dan = rnorm(100),
-#' temp_over_95_pctl =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' temp_over_99_pctl =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' temp_over_95_pctl_length =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' temp_under_freeze =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' temp_under_freeze_length =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' temp_under_5_pctl =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' no_precip  =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' no_precip_length =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' precip_95_pctl =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' precip_99_pctl =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' precip_moderate =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' precip_heavy =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' freeze_thaw =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' gdd =  sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' gdd_count = rnorm(100),
-#' not_gdd_count = rnorm(100),
-#' frost = sample(x = c("TRUE","FALSE"), size = 100, replace = TRUE),
-#' grow_length = rnorm(100)
+#'  gcm = c("bcc-csm1-1.rcp45", "BNU-ESM.rcp45", "CanESM2.rcp85", "CCSM4.rcp45",
+#'              "CSIRO-Mk3-6-0.rcp45"),
+#'  precip_change = rnorm(5),
+#'  tmin_change = rnorm(5),
+#'  tmax_change = rnorm(5),
+#'  rhmax_change = rnorm(5),
+#'  rhmin_change = rnorm(5),
+#'  tavg_change = rnorm(5),
+#'  heat_index_change = rnorm(5),
+#'  heat_index_ec_change = rnorm(5),
+#'  heat_index_dan_change = rnorm(5),
+#'  temp_over_95_pctl_change =  rnorm(5),
+#'  temp_over_99_pctl_change =  rnorm(5),
+#'  temp_over_95_pctl_length_change =  rnorm(5),
+#'  temp_under_freeze_change =  rnorm(5),
+#'  temp_under_freeze_length_change =  rnorm(5),
+#'  temp_under_5_pctl_change =  rnorm(5),
+#'  no_precip_change  =  rnorm(5),
+#'  no_precip_length_change =  rnorm(5),
+#'  precip_95_pctl_change =  rnorm(5),
+#'  precip_99_pctl_change =  rnorm(5),
+#'  precip_moderate_change =  rnorm(5),
+#'  precip_heavy_change =  rnorm(5),
+#'  freeze_thaw_change =  rnorm(5),
+#'  gdd_change =  rnorm(5),
+#'  gdd_count_change = rnorm(5),
+#'  not_gdd_count_change = rnorm(5),
+#'  frost_change = rnorm(5),
+#'  grow_length_change = rnorm(5),
+#'  units = rep("imperial", each = 5)
 #' )
 #'
 #' cf_pca("SCBL", data = data, variables = c("tmin", "tmax", "rhmin"),
 #' num_cf = 2)
-#' }
+#'}
 #'
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
@@ -91,8 +88,10 @@ cf_pca <- function(SiteID = "unnamed_site",
 
   all_threshold = c("precip_change", "tmax_change", "tmin_change",  "tavg_change", "rhmin_change", "rhmax_change", "heat_index_change", "heat_index_ec_change", "heat_index_dan_change", "temp_over_95_pctl_change", "temp_over_99_pctl_change", "temp_over_95_pctl_length_change", "temp_under_freeze_change", "temp_under_freeze_length_change", "temp_under_5_pctl_change", "no_precip_change", "no_precip_length_change", "precip_95_pctl_change", "precip_99_pctl_change", "precip_moderate_change", "precip_heavy_change", "freeze_thaw_change", "gdd_change", "frost_change", "grow_length_change")
 
-  function_variables = if(variables == "all_threshold") all_threshold else(variables)
-  #ifelse didn't work here
+  function_variables = if(variables == "all_threshold"){all_threshold} else {variables}
+  #if() else() didn't work here - I've gone back and forth between the two functions, both
+  # ultimately throw the error "the condition has length > 1 and only the first
+  # element will be used" cannot say why
   #create variables to be used for the function
 
   # stop function with error messages

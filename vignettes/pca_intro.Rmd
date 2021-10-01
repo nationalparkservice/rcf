@@ -22,7 +22,7 @@ library(here)
 library(ggplot2)
 library(ggrepel)
 
-my_directory <- here::here()
+my_directory <- "~"
 ```
 ## What is PCA and why use it?
 
@@ -36,16 +36,17 @@ If you would like to use your own data to calculate the PCA, you can skip down t
 
 If you want to use the data that is created from the threshold values, the first two steps in using PCA are exactly the same as using the quadrant method:
 
-1. Download data using `rcf_data()`
+1. Download data using `rcf_data()` from the `rcfdata` package
 2. Calculate threshold values using `calc_thresholds()`
 
-To see how to do this, you can follow along with An Introduction to the Reproducible Climate Futures package(INSERT LINK).
+To see how to do this, you can follow along with [An Introduction to the Reproducible Climate Futures package](https://github.com/Janelle88/rcf_addendum/blob/master/RCF%20instructions%20-%20simple.pdf).
 
 ```{r}
+# devtools::install_github("nationalparkservice/rcfdata")
+# library(rcfdata)
 # raw_data <- rcf_data(SiteID = "BAND",
 #                      latitude = 35.75758546,
 #                      longitude = -106.3054344,
-#                      directory = my_directory,
 #                      units = "imperial")
 
 raw_data <- read_csv("https://irmadev.nps.gov/DataStore/DownloadFile/660685")
@@ -127,7 +128,7 @@ glimpse(threshold_summary)
 
 Because this is a dataframe, we can plot any of these variables using ggplot.
 
-Let's look at the same graphs we looked at in An Introduction to the Reproducible Climate Futures package(INSERT LINK)
+Let's look at the same graphs we looked at in [An Introduction to the Reproducible Climate Futures package](https://github.com/Janelle88/rcf_addendum/blob/master/RCF%20instructions%20-%20simple.pdf)
 
 How does the precipitation change over time in the 4 climate futures?
 

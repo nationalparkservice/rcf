@@ -111,24 +111,25 @@ library(devtools)
 Then let's set the workspace that we will be using for all outputs from this package.
 
 ```{r}
-my_directory <- here::here()
+my_directory <- "~"
 ```
 
 This will set your directory to wherever the .Rproj file is located. You could alternatively create a directory in your project directory for the site you are looking at to save files there.
 
 ## 1. Download the data
 
-Next, we will download our data using the `rcf_data()` function.
+Next, we will download our data using the `rcf_data()` function from the `rcfdata` package, which is currently not officially a part of this package.
 
 This function downloads all data from the [`cft`](https://www.earthdatascience.org/cft/) package for all years from 1950 - 2099 for all 40 climate models. Because of the amount of data being downloaded, this function takes about 4 hours to run.
 
 For this function, you can choose your units to be either "imperial" (the default) or "metric." Keep in mind that if using metric, variables that are calculated later, such as the heat index, can only be calculated with Fahrenheit. Results for those variables will convert the temperature to Fahrenheit first.
 
 ```{r, eval=FALSE}
+# devtools::install_github("nationalparkservice/rcfdata")
+# library(rcfdata)
 # raw_data <- rcf_data(SiteID = "BAND",
 #                      latitude = 35.75758546,
 #                      longitude = -106.3054344,
-#                      directory = my_directory,
 #                      units = "imperial")
 ```
 
@@ -183,7 +184,7 @@ As you can see, the majority of the results from this function will be `TRUE` or
 
 The output of this function is a csv file named "BAND_thresholds.csv"
 
-For most users of this package, there will only be one more function to run before moving on to graphing. Advanced users can continue to follow along with this vignette or choose to move onto the [PCA intro](INSERT LINK) vignette.
+For most users of this package, there will only be one more function to run before moving on to graphing. Advanced users can continue to follow along with this vignette or choose to move onto the [PCA intro](https://github.com/Janelle88/rcf_addendum/blob/master/RCF%20instructions%20-%20pca.pdf) vignette.
 
 ## 3. Calculate Climate Futures
 
@@ -214,7 +215,7 @@ glimpse(corner_year)
 Because there are 2 csvs that come out of this function, the csv for the future means must be read in manually. 
 
 ```{r}
-means <- read_csv(here::here("BAND_future_means.csv"))
+means <- read_csv("~/BAND_future_means.csv")
 
 glimpse(means)
 ```
@@ -372,13 +373,12 @@ ggplot(data = corner_month_hw, aes(x = month, y = precip_monthly)) +
   theme_minimal() +
   theme(text = element_text(size = 20),
         legend.title = element_blank(),
-        #axis.title.x = element_blank(),
+
         plot.title = element_text(hjust = 0.5)) +
-        #axis.text.x = element_blank()) +
-  labs(y = "Monthly Precipitation (in)", x = "Month",
+  labs(y = "Monthly Precipitation (in)", x = " ",
        title = "Comparison of historical and future precipitation in the 'Hot Wet' climate future")
 ```
 
 #### 5. Advanced Users
 
-For users that want to try a more advanced approach to finding climate futures, the Introduction to using PCA for model selection(INSERT LINK) tutorial will walk you through the process.
+For users that want to try a more advanced approach to finding climate futures, the [Introduction to using PCA for model selection](https://github.com/Janelle88/rcf_addendum/blob/master/RCF%20instructions%20-%20pca.pdf) tutorial will walk you through the process.
