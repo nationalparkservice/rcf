@@ -15,7 +15,7 @@
 #' @param units the unit type that will be used, defaults to "imperial"
 #' ("imperial" or "metric")
 #' @param past_years years to base past data off of. Cannot be any earlier than 1950 or later
-#' 2005, due to the definition of past in the MACA v2 data (AMBER TO FIX). Must be written as
+#' 2005, due to the definition of past in the MACA v2 data. Must be written as
 #' c(past_start, past_end). Defaults to 1950 to 2000 (numeric)
 #' @param directory where to save files to. Per CRAN guidelines, this
 #' defaults to a temporary directory and files created will be lost after

@@ -12,7 +12,7 @@
 #' @param future_year year to center changes from historical data around. Defaults
 #' to 2040 (numeric)
 #' @param past_years years to base past data off of. Cannot be any earlier than 1950 or later
-#' 2005, due to the definition of past in the MACA v2 data (AMBER TO FIX). Must be written as
+#' 2005, due to the definition of past in the MACA v2 data. Must be written as
 #' c(past_start, past_end). Defaults to 1950 to 2000 (numeric)
 #' @param method method for calculating resulting .csv. Options "quadrant" and "corner".
 #' "quadrant" will return a data frame in which all models are labeled
