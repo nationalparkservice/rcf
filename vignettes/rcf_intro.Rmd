@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 ```
 ## About this tutorial
 
-This vignette will walk through how to use the rcf package. Using the functions in this package will enable users to be make the choice to automatically select Global Circulation Models (GCMs) that are most representative of 4 climate futures (CFs) - Warm Wet, Warm Dry (or Damp), Hot Wet, and Hot Dry (or Damp)*.
+This vignette will walk through how to use the rcf package. Using the functions in this package will enable users to be make the choice to automatically select Global Climate Models (GCMs) that are most representative of 4 climate futures (CFs) - Warm Wet, Warm Dry (or Damp), Hot Wet, and Hot Dry (or Damp)*.
 
 It can also be used to manipulate the data to produce summaries of threshold values for 25 variables using one of three methods (quadrant, corner, or PCA) and duration (month, season, or year).
 
