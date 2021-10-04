@@ -13,7 +13,7 @@ Authors@R: c(
            comment = c(ORCID = "0000-0002-7282-1217"))
            )
 Maintainer: Amber Runyon <amber_runyon@nps.gov>
-Description: Using the functions in this package will enable users to  develop divergent scenarios of future climate (climate futures) from climate data and summarize 25 resource-relevant metrics of climate change. This package generates the climate materials used to support planning efforts by the National Park Service Climate Change Response Program. 
+Description: Using the functions in this package will enable users to  develop divergent scenarios of future climate (climate futures) from climate data and summarize 25 resource-relevant metrics of climate change. This package generates the climate materials used to support planning efforts by the National Park Service Climate Change Response Program. See the manual and tutorials at <https://github.com/nationalparkservice/rcf/tree/main/vignettes> to get started.
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
