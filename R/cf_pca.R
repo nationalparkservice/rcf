@@ -86,9 +86,14 @@ cf_pca <- function(SiteID = "unnamed_site",
                    num_cf = 4,
                    directory = tempdir()){
 
+  first_variable = variables[1]
+
+  is_all_threshold <- ifelse(first_variable == "all_threshold", TRUE, FALSE)
+
   all_threshold = c("precip_change", "tmax_change", "tmin_change",  "tavg_change", "rhmin_change", "rhmax_change", "heat_index_change", "heat_index_ec_change", "heat_index_dan_change", "temp_over_95_pctl_change", "temp_over_99_pctl_change", "temp_over_95_pctl_length_change", "temp_under_freeze_change", "temp_under_freeze_length_change", "temp_under_5_pctl_change", "no_precip_change", "no_precip_length_change", "precip_95_pctl_change", "precip_99_pctl_change", "precip_moderate_change", "precip_heavy_change", "freeze_thaw_change", "gdd_change", "frost_change", "grow_length_change")
 
-  function_variables = if(variables == "all_threshold"){all_threshold} else {variables}
+    function_variables = if(is_all_threshold == TRUE){paste(all_threshold)} else{paste(variables)}
+
   #if() else() didn't work here - I've gone back and forth between the two functions, both
   # ultimately throw the error "the condition has length > 1 and only the first
   # element will be used" cannot say why

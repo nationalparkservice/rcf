@@ -1,7 +1,6 @@
 ---
 title: "An Introduction to the Reproducible Climate Futures package"
 author: "Janelle Christensen"
-date: "8-20-2021"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{An Introduction to the Reproducible Climate Futures package}
@@ -98,7 +97,6 @@ library(ggrepel)
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #hidden because they are only affecting the behind the scenes of the tutorial
 library(kableExtra)
-library(devtools)
 ```
 
 Then set the workspace that we will be using for all outputs from this package.

@@ -1,5 +1,6 @@
 ---
 title: "Introduction to using PCA for model selection"
+author: "Janelle Christensen"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Introduction to using PCA for model selection}
