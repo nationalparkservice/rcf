@@ -3,3 +3,4 @@
 ^test_script.R$
 ^README\.Rmd$
 ^cran-comments\.md$
+^CRAN-RELEASE$
